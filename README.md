@@ -1,12 +1,16 @@
-```plaintext
-  ______ _   _ _     ___ ___ _  _ _____ _____ _   _   _   ___
- |  ____| \ | | |   |_ _/ __| || |_   _| __\ \ / / /_\ |_ _|
- | |___ |  \| | |    | | (_ | __ | | | | _| \ V / / _ \ | |
- |  ___|| |\  | |___ | |\__ \ ||_| | | |___| | / ___ \| |
- |_____||_| \_|_____|___|___/\__/  |_|_____|_|/_/   \_\___|
-```
-
 # 🌟 🔍 EnlightenAI – Illuminate the Hidden Logic Within Codebases
+
+```plaintext
+    .*      _____       _     _____       ___
+   /*\     |  ___|     / \   |_   _|     /   \
+  /***\    | |__      / _ \    | |      /  O  \
+ /     \   |  __|    / ___ \   | |     /  ___  \
+/       \  | |____  /_/   \_\  | |    /  /   \  \
+\       /  |______||_______/  |_|    |  |   |  |
+ \     /                              \  \___/  /
+  \___/                                \       /
+                                        \_____/
+```
 
 >*Lost in someone else's GitHub project? Build an AI Code Explainer to generate clear explanations! This tutorial shows you how to create an agent that analyzes repositories and produces easy-to-understand guides.*
 
