@@ -4,9 +4,8 @@ EnlightenAI - Combine Tutorial Node
 This module contains the CombineTutorialNode class for combining tutorial chapters.
 """
 
-import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from enlightenai.nodes.node import Node
 from enlightenai.utils.html_viewer import create_html_viewer, open_html_viewer

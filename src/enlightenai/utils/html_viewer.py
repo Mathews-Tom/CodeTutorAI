@@ -7,79 +7,79 @@ This module provides functions for creating a browser-based viewer for tutorials
 import os
 import shutil
 import webbrowser
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 def create_html_viewer(
     output_dir: str,
     title: str,
     chapters: List[Dict[str, Any]],
-    diagrams: Optional[Dict[str, str]] = None
+    diagrams: Optional[Dict[str, str]] = None,
 ) -> str:
     """Create a browser-based viewer for the tutorial.
-    
+
     Args:
         output_dir (str): Output directory for the tutorial
         title (str): Title of the tutorial
         chapters (list): List of chapter dictionaries
         diagrams (dict, optional): Dictionary of generated diagrams
-        
+
     Returns:
         str: Path to the HTML file
     """
     # Create the viewer directory
     viewer_dir = os.path.join(output_dir, "viewer")
     os.makedirs(viewer_dir, exist_ok=True)
-    
+
     # Create the assets directory
     assets_dir = os.path.join(viewer_dir, "assets")
     os.makedirs(assets_dir, exist_ok=True)
-    
+
     # Create the CSS file
     css_path = os.path.join(assets_dir, "style.css")
     with open(css_path, "w", encoding="utf-8") as f:
         f.write(_get_css())
-    
+
     # Create the JavaScript file
     js_path = os.path.join(assets_dir, "script.js")
     with open(js_path, "w", encoding="utf-8") as f:
         f.write(_get_js())
-    
+
     # Create the HTML file
     html_path = os.path.join(viewer_dir, "index.html")
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(_get_html(title, chapters, diagrams))
-    
+
     # Copy chapter files to the viewer directory
     chapters_dir = os.path.join(output_dir, "chapters")
     viewer_chapters_dir = os.path.join(viewer_dir, "chapters")
     os.makedirs(viewer_chapters_dir, exist_ok=True)
-    
+
     for chapter in chapters:
         if "filename" in chapter:
             src_path = os.path.join(chapters_dir, chapter["filename"])
             dst_path = os.path.join(viewer_chapters_dir, chapter["filename"])
             if os.path.exists(src_path):
                 shutil.copy2(src_path, dst_path)
-    
+
     # Copy diagram files to the viewer directory if available
     if diagrams:
         diagrams_dir = os.path.join(output_dir, "diagrams")
         viewer_diagrams_dir = os.path.join(viewer_dir, "diagrams")
         os.makedirs(viewer_diagrams_dir, exist_ok=True)
-        
+
         for diagram_type in diagrams:
             src_path = os.path.join(diagrams_dir, f"{diagram_type}.md")
             dst_path = os.path.join(viewer_diagrams_dir, f"{diagram_type}.md")
             if os.path.exists(src_path):
                 shutil.copy2(src_path, dst_path)
-    
+
     return html_path
 
 
 def open_html_viewer(html_path: str) -> None:
     """Open the HTML viewer in the default web browser.
-    
+
     Args:
         html_path (str): Path to the HTML file
     """
@@ -89,15 +89,15 @@ def open_html_viewer(html_path: str) -> None:
 def _get_html(
     title: str,
     chapters: List[Dict[str, Any]],
-    diagrams: Optional[Dict[str, str]] = None
+    diagrams: Optional[Dict[str, str]] = None,
 ) -> str:
     """Get the HTML content for the viewer.
-    
+
     Args:
         title (str): Title of the tutorial
         chapters (list): List of chapter dictionaries
         diagrams (dict, optional): Dictionary of generated diagrams
-        
+
     Returns:
         str: HTML content
     """
@@ -106,10 +106,10 @@ def _get_html(
     for chapter in chapters:
         toc_items.append(
             f'<li><a href="#" data-chapter="{chapter["filename"]}">'
-            f'Chapter {chapter["number"]}: {chapter["title"]}</a></li>'
+            f"Chapter {chapter['number']}: {chapter['title']}</a></li>"
         )
     toc_html = "\n".join(toc_items)
-    
+
     # Create the diagrams section if available
     diagrams_html = ""
     if diagrams:
@@ -125,7 +125,7 @@ def _get_html(
             </ul>
         </div>
         """
-    
+
     # Create the HTML content
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -161,13 +161,13 @@ def _get_html(
     <script src="assets/script.js"></script>
 </body>
 </html>"""
-    
+
     return html
 
 
 def _get_css() -> str:
     """Get the CSS content for the viewer.
-    
+
     Returns:
         str: CSS content
     """
@@ -362,7 +362,7 @@ body {
 
 def _get_js() -> str:
     """Get the JavaScript content for the viewer.
-    
+
     Returns:
         str: JavaScript content
     """

@@ -7,7 +7,7 @@ This module contains the WriteChaptersNode class for generating tutorial chapter
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from tqdm import tqdm
 
