@@ -52,7 +52,13 @@ cd EnlightenAI
 ### 2. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
+```
+
+Or for development:
+
+```bash
+./install_dev.sh
 ```
 
 ### 3. Set Up Environment Variables
@@ -69,7 +75,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 ### 4. Run EnlightenAI on a GitHub Repo
 
 ```bash
-python main.py https://github.com/SomeUser/SomeProject --output-dir ./docs
+enlightenai https://github.com/SomeUser/SomeProject --output-dir ./docs
 ```
 
 #### Optional flags
@@ -86,7 +92,7 @@ python main.py https://github.com/SomeUser/SomeProject --output-dir ./docs
 ### 5. Run with Mock Data for Testing
 
 ```bash
-python test_mock.py --verbose
+python -m enlightenai.test_mock --verbose
 ```
 
 ---
@@ -95,26 +101,33 @@ python test_mock.py --verbose
 
 ```plaintext
 EnlightenAI/
-├── main.py                # CLI entry point
-├── flow.py                # Defines the AI workflow
-├── nodes/                 # Node implementations for each step
-│   ├── __init__.py        # Base Node class
-│   ├── fetch_repo_gitin.py # GitHub repository fetching
-│   ├── fetch_web.py       # Web content fetching
-│   ├── identify_abstractions.py # Abstraction identification
-│   ├── analyze_relationships.py # Relationship analysis
-│   ├── order_chapters.py  # Chapter ordering
-│   ├── write_chapters.py  # Chapter writing
-│   └── combine_tutorial.py # Tutorial combination
-├── utils/                 # Utility scripts
-│   ├── __init__.py        # Package initialization
-│   ├── call_llm.py        # LLM client
-│   ├── formatting.py      # Formatting utilities
-│   └── mock_data.py       # Mock data for testing
+├── src/                  # Source code directory
+│   └── enlightenai/      # Main package
+│       ├── __init__.py    # Package initialization
+│       ├── cli.py         # CLI entry point
+│       ├── flow.py        # Defines the AI workflow
+│       ├── nodes/         # Node implementations for each step
+│       │   ├── __init__.py # Node package initialization
+│       │   ├── node.py     # Base Node class
+│       │   ├── fetch_repo_gitin.py # GitHub repository fetching
+│       │   ├── fetch_web.py # Web content fetching
+│       │   ├── identify_abstractions.py # Abstraction identification
+│       │   ├── analyze_relationships.py # Relationship analysis
+│       │   ├── order_chapters.py # Chapter ordering
+│       │   ├── write_chapters.py # Chapter writing
+│       │   └── combine_tutorial.py # Tutorial combination
+│       └── utils/         # Utility scripts
+│           ├── __init__.py # Utils package initialization
+│           ├── call_llm.py # LLM client compatibility layer
+│           ├── llm_client.py # Enhanced LLM client
+│           ├── formatting.py # Formatting utilities
+│           └── mock_data.py # Mock data for testing
+├── nodes/                 # Node implementations (for development)
+├── utils/                 # Utility scripts (for development)
 ├── docs/                  # Output tutorials
-├── test_enlightenai.py    # Test script for real data
-├── test_mock.py           # Test script for mock data
+├── setup.py               # Package setup script
 ├── requirements.txt       # Python dependencies
+├── install_dev.sh         # Development installation script
 └── README.md              # You're here!
 ```
 
@@ -125,7 +138,7 @@ EnlightenAI/
 Explore the `docs/` folder or try EnlightenAI on a real repo like:
 
 ```bash
-python main.py --repo-url https://github.com/tiangolo/fastapi
+enlightenai https://github.com/tiangolo/fastapi
 ```
 
 Check back soon for live demo links and tutorial showcases!

@@ -9,5 +9,7 @@ dependencies = [
     "gitin>=0.1.0",
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
+    "tenacity>=9.1.2",
+    "tiktoken>=0.9.0",
     "tqdm>=4.67.1",
 ]
