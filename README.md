@@ -51,14 +51,37 @@ cd EnlightenAI
 
 ### 2. Install Dependencies
 
+#### Using pip
+
 ```bash
+# Install from the current directory
 pip install -e .
+
+# Or install directly from GitHub
+pip install git+https://github.com/Mathews-Tom/EnlightenAI.git
 ```
 
-Or for development:
+#### Using uv (faster installation)
 
 ```bash
+# Install uv if you don't have it
+pip install uv
+
+# Install from the current directory
+uv pip install -e .
+
+# Or install directly from GitHub
+uv pip install git+https://github.com/Mathews-Tom/EnlightenAI.git
+```
+
+#### For Development
+
+```bash
+# Using the provided script
 ./install_dev.sh
+
+# Or manually
+pip install -e .
 ```
 
 ### 3. Set Up Environment Variables
@@ -74,11 +97,28 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ### 4. Run EnlightenAI on a GitHub Repo
 
+#### As a Command-Line Tool
+
+After installation, you can run EnlightenAI directly from the command line:
+
 ```bash
+# Using the command-line tool
 enlightenai https://github.com/SomeUser/SomeProject --output-dir ./docs
 ```
 
-#### Optional flags
+#### As a Python Module
+
+You can also run EnlightenAI as a Python module:
+
+```bash
+# Using Python module syntax
+python -m enlightenai.cli https://github.com/SomeUser/SomeProject --output-dir ./docs
+
+# Or with python3 explicitly
+python3 -m enlightenai.cli https://github.com/SomeUser/SomeProject --output-dir ./docs
+```
+
+#### Optional Flags
 
 ```bash
   --web-url https://example.com/docs  # Additional web context
@@ -86,13 +126,24 @@ enlightenai https://github.com/SomeUser/SomeProject --output-dir ./docs
   --exclude "test_*,*__pycache__*"    # File patterns to exclude
   --llm-provider openai               # LLM provider (openai, anthropic, palm)
   --api-key YOUR_API_KEY              # Override API key from .env
+  --batch-size 2                      # Number of chapters to generate in parallel
+  --output-formats markdown,html,pdf  # Output formats to generate
   --verbose                           # Enable verbose output
 ```
 
 ### 5. Run with Mock Data for Testing
 
+You can test EnlightenAI with mock data to avoid making actual API calls:
+
 ```bash
+# Using Python module syntax
 python -m enlightenai.test_mock --verbose
+
+# Or with python3 explicitly
+python3 -m enlightenai.test_mock --verbose
+
+# With additional options
+python -m enlightenai.test_mock --output-formats markdown,html --batch-size 2 --verbose
 ```
 
 ---
@@ -142,7 +193,11 @@ EnlightenAI/
 Explore the `docs/` folder or try EnlightenAI on a real repo like:
 
 ```bash
+# As a command-line tool
 enlightenai https://github.com/tiangolo/fastapi
+
+# Or as a Python module
+python -m enlightenai.cli https://github.com/tiangolo/fastapi
 ```
 
 Check back soon for live demo links and tutorial showcases!
