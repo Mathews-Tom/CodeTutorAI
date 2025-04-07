@@ -65,6 +65,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--max-chunk-size",
+        type=int,
+        default=5000,
+        help="Maximum chunk size in characters for LLM analysis (default: 5000)",
+    )
+
+    parser.add_argument(
         "--fetch-repo-metadata",
         action="store_true",
         default=True,
@@ -96,11 +103,13 @@ def main():
         "api_key": args.api_key,
         "github_token": args.github_token or os.environ.get("GITHUB_API_KEY"),
         "max_file_size": args.max_file_size,
+        "max_chunk_size": args.max_chunk_size,
         "fetch_repo_metadata": args.fetch_repo_metadata,
         "verbose": args.verbose,
         "files": {},  # Will store {path: content} pairs
         "web_content": {},  # Will store web crawl results
         "repo_metadata": {},  # Will store repository metadata
+        "codebase_structure": {},  # Will store analyzed codebase structure
         "abstractions": [],  # Will store identified components
         "relationships": [],  # Will store component relationships
         "chapter_order": [],  # Will store ordered chapter sequence
