@@ -78,6 +78,49 @@ def format_abstraction_for_markdown(abstraction: Dict[str, Any]) -> str:
     return markdown
 
 
+def create_mermaid_diagram(
+    abstractions: List[Dict[str, Any]], relationships: List[Dict[str, Any]]
+) -> str:
+    """Create a Mermaid diagram from abstractions and relationships.
+
+    Args:
+        abstractions (list): List of abstraction dictionaries
+        relationships (list): List of relationship dictionaries
+
+    Returns:
+        str: Mermaid diagram code
+    """
+    mermaid = "```mermaid\ngraph TD\n"
+
+    # Add nodes
+    for abstraction in abstractions:
+        node_id = re.sub(r"[^a-zA-Z0-9]", "", abstraction["name"])
+        node_label = f"{abstraction['name']} ({abstraction['type']})"
+        mermaid += f'    {node_id}["{node_label}"]\n'
+
+    # Add edges
+    for relationship in relationships:
+        source = re.sub(r"[^a-zA-Z0-9]", "", relationship["source"])
+        target = re.sub(r"[^a-zA-Z0-9]", "", relationship["target"])
+        rel_type = relationship["type"]
+
+        # Use different arrow types based on relationship type
+        arrow = "-->"
+        if rel_type == "inherits":
+            arrow = "-->|inherits|"
+        elif rel_type == "uses":
+            arrow = "-->|uses|"
+        elif rel_type == "calls":
+            arrow = "-->|calls|"
+        elif rel_type == "imports":
+            arrow = "-.->|imports|"
+
+        mermaid += f"    {source} {arrow} {target}\n"
+
+    mermaid += "```"
+    return mermaid
+
+
 def create_table_of_contents(chapters: List[Dict[str, Any]]) -> str:
     """Create a Markdown table of contents from chapter information.
 
