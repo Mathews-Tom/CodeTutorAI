@@ -10,6 +10,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List
 
+from tqdm import tqdm
+
 from enlightenai.nodes.node import Node
 from enlightenai.utils.call_llm import call_llm
 from enlightenai.utils.diagram_generator import generate_diagrams
@@ -104,7 +106,6 @@ class WriteChaptersNode(Node):
             Returns:
                 dict: The generated chapter
             """
-            start_time = time.time()
             chapter_title = ordered_chapters[chapter_index]
             chapter_number = chapter_index + 1
 
@@ -166,26 +167,20 @@ class WriteChaptersNode(Node):
             with open(chapter_path, "w", encoding="utf-8") as f:
                 f.write(chapter_content)
 
-            # Calculate elapsed time
-            elapsed_time = time.time() - start_time
-            hours, remainder = divmod(elapsed_time, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            time_str = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
-
-            # Print completion message
-            print(f"Generated chapter {chapter_number}: {chapter_title} in {time_str}")
+            # Print completion message if verbose
+            if verbose:
+                print(f"Generated chapter {chapter_number}: {chapter_title}")
 
             return {
                 "title": chapter_title,
                 "content": chapter_content,
                 "number": chapter_number,
                 "filename": chapter_filename,
-                "elapsed_time": elapsed_time,
-                "time_str": time_str,
             }
 
         # Use ThreadPoolExecutor to generate chapters in parallel
-        print(f"Generating {len(ordered_chapters)} chapters in parallel...")
+        if verbose:
+            print(f"Generating {len(ordered_chapters)} chapters in parallel...")
 
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
             # Submit all tasks
@@ -195,13 +190,16 @@ class WriteChaptersNode(Node):
                 futures.append(future)
 
             # Process results as they complete
-            completed = 0
-            total = len(futures)
-            for future in futures:
-                chapter = future.result()
-                chapters.append(chapter)
-                completed += 1
-                print(f"Chapter generation progress: {completed}/{total}")
+            with tqdm(
+                total=len(futures),
+                desc="Generating chapters",
+                unit="chapter",
+                disable=not verbose,
+            ) as pbar:
+                for future in futures:
+                    chapter = future.result()
+                    chapters.append(chapter)
+                    pbar.update(1)
 
         # Sort chapters by number
         chapters.sort(key=lambda x: x["number"])

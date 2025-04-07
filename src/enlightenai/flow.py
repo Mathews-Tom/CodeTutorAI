@@ -161,19 +161,6 @@ class ProgressManager:
             self.node_pbar.n = int((progress / total) * 100)
             self.node_pbar.refresh()
 
-    def print_progress(self, message, current=None, total=None):
-        """Print a progress message.
-
-        Args:
-            message (str): The progress message
-            current (int, optional): The current progress value
-            total (int, optional): The total progress value
-        """
-        if current is not None and total is not None:
-            print(f"{message} ({current}/{total})")
-        else:
-            print(message)
-
     def get_task_pbar(self, task_name, total, desc=None, unit="it", position=2):
         """Get or create a progress bar for a specific task.
 
