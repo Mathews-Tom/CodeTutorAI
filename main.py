@@ -91,6 +91,19 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Number of chapters to generate in parallel (default: 1)",
+    )
+
+    parser.add_argument(
+        "--output-formats",
+        default="markdown",
+        help="Comma-separated list of output formats: markdown,html,pdf,github_pages (default: markdown)",
+    )
+
+    parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
 
@@ -116,6 +129,8 @@ def main():
         "github_token": args.github_token or os.environ.get("GITHUB_API_KEY"),
         "max_file_size": args.max_file_size,
         "max_chunk_size": args.max_chunk_size,
+        "batch_size": args.batch_size,
+        "output_formats": args.output_formats.split(","),
         "fetch_repo_metadata": args.fetch_repo_metadata,
         "verbose": args.verbose,
         "files": {},  # Will store {path: content} pairs
