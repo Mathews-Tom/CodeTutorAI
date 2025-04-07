@@ -65,6 +65,25 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--github-token",
+        help="GitHub API token for authentication (defaults to environment variable GITHUB_API_KEY)",
+    )
+
+    parser.add_argument(
+        "--max-file-size",
+        type=int,
+        default=1024 * 1024,  # 1MB
+        help="Maximum file size in bytes to include (default: 1MB)",
+    )
+
+    parser.add_argument(
+        "--fetch-repo-metadata",
+        action="store_true",
+        default=True,
+        help="Fetch repository metadata (default: True)",
+    )
+
+    parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
 
@@ -87,9 +106,13 @@ def main():
         "exclude_patterns": args.exclude.split(","),
         "llm_provider": args.llm_provider,
         "api_key": args.api_key,
+        "github_token": args.github_token or os.environ.get("GITHUB_API_KEY"),
+        "max_file_size": args.max_file_size,
+        "fetch_repo_metadata": args.fetch_repo_metadata,
         "verbose": args.verbose,
         "files": {},  # Will store {path: content} pairs
         "web_content": {},  # Will store web crawl results
+        "repo_metadata": {},  # Will store repository metadata
         "abstractions": [],  # Will store identified components
         "relationships": [],  # Will store component relationships
         "chapter_order": [],  # Will store ordered chapter sequence

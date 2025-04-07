@@ -75,7 +75,8 @@ class IdentifyAbstractionsNode(Node):
         if verbose:
             print(f"Identified {len(abstractions)} abstractions")
             for abstraction in abstractions:
-                print(f"  - {abstraction['name']}: {abstraction['type']}")
+                abstraction_type = abstraction.get("type", "N/A")
+                print(f"  - {abstraction['name']}: {abstraction_type}")
 
         # Update the context with the identified abstractions
         context["abstractions"] = abstractions
