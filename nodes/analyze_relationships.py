@@ -65,9 +65,10 @@ class AnalyzeRelationshipsNode(Node):
         if verbose:
             print(f"Identified {len(relationships)} relationships")
             for relationship in relationships:
-                print(
-                    f"  - {relationship['source']} {relationship['type']} {relationship['target']}"
-                )
+                source = relationship.get("source", "Unknown")
+                rel_type = relationship.get("type", "relates to")
+                target = relationship.get("target", "Unknown")
+                print(f"  - {source} {rel_type} {target}")
 
         # Update the context with the identified relationships
         context["relationships"] = relationships
