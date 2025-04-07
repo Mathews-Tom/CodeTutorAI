@@ -8,10 +8,7 @@ import json
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
-from typing import Any, Dict, List, Optional
-
-from tqdm import tqdm
+from typing import Any, Dict, List
 
 from enlightenai.nodes.node import Node
 from enlightenai.utils.call_llm import call_llm
@@ -57,13 +54,6 @@ class WriteChaptersNode(Node):
         relationships = context.get("relationships", {})
         files = context.get("files", {})
 
-        # Get the progress manager
-        progress_manager = context.get("progress_manager")
-
-        # Update node progress
-        if progress_manager:
-            progress_manager.update_node_progress(20)
-
         # Create the chapters directory
         chapters_dir = os.path.join(output_dir, "chapters")
         os.makedirs(chapters_dir, exist_ok=True)
@@ -75,11 +65,6 @@ class WriteChaptersNode(Node):
 
             # Update the context with an empty chapters list
             context["chapters"] = []
-
-            # Complete node progress
-            if progress_manager:
-                progress_manager.update_node_progress(100)
-
             return None
 
         if verbose:
@@ -107,14 +92,18 @@ class WriteChaptersNode(Node):
             if verbose:
                 print(f"Saved diagrams to {diagrams_dir}")
 
-        # Update node progress
-        if progress_manager:
-            progress_manager.update_node_progress(30)
-
         # Generate chapters in parallel
         chapters = []
 
         def generate_chapter(chapter_index):
+            """Generate a single chapter.
+
+            Args:
+                chapter_index (int): Index of the chapter in the ordered_chapters list
+
+            Returns:
+                dict: The generated chapter
+            """
             start_time = time.time()
             chapter_title = ordered_chapters[chapter_index]
             chapter_number = chapter_index + 1
@@ -133,22 +122,25 @@ class WriteChaptersNode(Node):
                     "title": chapter_title,
                     "content": f"# Chapter {chapter_number}: {chapter_title}\n\nNo content available for this chapter.",
                     "number": chapter_number,
+                    "filename": f"chapter_{chapter_number:02d}.md",
                 }
 
-            # Get related abstractions
-            related_abstractions = []
-            if abstraction["name"] in relationships:
-                related_abstractions = relationships[abstraction["name"]]
+            # Get the abstraction details
+            abstraction_name = abstraction["name"]
+            abstraction_description = abstraction.get("description", "")
+            abstraction_files = abstraction.get("files", [])
 
-            # Create the prompt
+            # Get the related abstractions
+            related_abstractions = relationships.get(abstraction_name, [])
+
+            # Create the prompt for the LLM
             prompt = self._create_chapter_prompt(
                 abstraction,
                 related_abstractions,
+                files,
                 chapter_number,
-                len(ordered_chapters),
                 depth,
                 language,
-                generate_diagrams,
                 diagrams,
             )
 
@@ -161,10 +153,16 @@ class WriteChaptersNode(Node):
                 temperature=0.7,
             )
 
-            # Save the chapter
-            chapter_filename = f"chapter_{chapter_number:02d}_{self._sanitize_filename(chapter_title)}.md"
-            chapter_path = os.path.join(chapters_dir, chapter_filename)
+            # Format the chapter content
+            chapter_content = self._format_chapter_content(
+                chapter_content, chapter_number, chapter_title
+            )
 
+            # Create the chapter filename
+            chapter_filename = f"chapter_{chapter_number:02d}.md"
+
+            # Save the chapter to a file
+            chapter_path = os.path.join(chapters_dir, chapter_filename)
             with open(chapter_path, "w", encoding="utf-8") as f:
                 f.write(chapter_content)
 
@@ -187,49 +185,26 @@ class WriteChaptersNode(Node):
             }
 
         # Use ThreadPoolExecutor to generate chapters in parallel
-        with ThreadPoolExecutor(max_workers=batch_size) as executor:
-            # Create a progress bar for chapters
-            chapters_pbar = None
-            if progress_manager and ordered_chapters:
-                chapters_pbar = progress_manager.get_task_pbar(
-                    "Chapters",
-                    len(ordered_chapters),
-                    desc="    Generating chapters",
-                    unit="chapter",
-                )
-            elif verbose and ordered_chapters:
-                chapters_pbar = tqdm(
-                    total=len(ordered_chapters),
-                    desc="Generating chapters",
-                    unit="chapter",
-                )
+        print(f"Generating {len(ordered_chapters)} chapters in parallel...")
 
+        with ThreadPoolExecutor(max_workers=batch_size) as executor:
             # Submit all tasks
-            future_to_index = {
-                executor.submit(generate_chapter, i): i
-                for i in range(len(ordered_chapters))
-            }
+            futures = []
+            for i in range(len(ordered_chapters)):
+                future = executor.submit(generate_chapter, i)
+                futures.append(future)
 
             # Process results as they complete
-            for future in future_to_index:
+            completed = 0
+            total = len(futures)
+            for future in futures:
                 chapter = future.result()
                 chapters.append(chapter)
-                if chapters_pbar:
-                    chapters_pbar.update(1)
-
-            # Close the progress bar if we created it
-            if chapters_pbar:
-                if progress_manager:
-                    progress_manager.close_task_pbar("Chapters")
-                else:
-                    chapters_pbar.close()
+                completed += 1
+                print(f"Chapter generation progress: {completed}/{total}")
 
         # Sort chapters by number
         chapters.sort(key=lambda x: x["number"])
-
-        # Update node progress
-        if progress_manager:
-            progress_manager.update_node_progress(90)
 
         # Update the context
         context["chapters"] = chapters
@@ -237,103 +212,109 @@ class WriteChaptersNode(Node):
         if verbose:
             print(f"Generated {len(chapters)} chapters")
 
-        # Complete node progress
-        if progress_manager:
-            progress_manager.update_node_progress(100)
-
         return None
 
     def _create_chapter_prompt(
         self,
         abstraction: Dict[str, Any],
         related_abstractions: List[str],
+        files: Dict[str, str],
         chapter_number: int,
-        total_chapters: int,
         depth: str,
         language: str,
-        generate_diagrams: bool,
         diagrams: Dict[str, str],
     ) -> str:
-        """Create a prompt for generating a chapter.
+        """Create a prompt for the LLM to generate a chapter.
 
         Args:
-            abstraction (dict): The abstraction for this chapter
-            related_abstractions (list): List of related abstractions
+            abstraction (dict): The abstraction to generate a chapter for
+            related_abstractions (list): List of related abstraction names
+            files (dict): Dictionary of file contents
             chapter_number (int): The chapter number
-            total_chapters (int): The total number of chapters
-            depth (str): Depth of the tutorial (basic, intermediate, advanced)
-            language (str): Language for the tutorial
-            generate_diagrams (bool): Whether to generate diagrams
+            depth (str): The depth of the tutorial (basic, intermediate, advanced)
+            language (str): The language for the tutorial
             diagrams (dict): Dictionary of generated diagrams
 
         Returns:
-            str: The prompt for generating the chapter
+            str: The prompt for the LLM
         """
-        # Determine previous and next chapters
-        prev_chapter = f"Chapter {chapter_number - 1}" if chapter_number > 1 else "None"
-        next_chapter = (
-            f"Chapter {chapter_number + 1}"
-            if chapter_number < total_chapters
-            else "None"
-        )
+        # Get the abstraction details
+        abstraction_name = abstraction["name"]
+        abstraction_description = abstraction.get("description", "")
+        abstraction_files = abstraction.get("files", [])
 
         # Create the prompt
         prompt = f"""
-You are an expert software developer and technical writer. Your task is to write Chapter {chapter_number} of a tutorial about a codebase.
+You are an expert software developer and technical writer. Your task is to write Chapter {chapter_number} of a tutorial about the {abstraction_name} component.
 
 # Chapter Information
-- Title: {abstraction["name"]}
-- Description: {abstraction["description"]}
-- Previous Chapter: {prev_chapter}
-- Next Chapter: {next_chapter}
-- Tutorial Depth: {depth}
-- Language: {language}
+- Title: {abstraction_name}
+- Description: {abstraction_description}
+- Files: {", ".join(abstraction_files)}
+- Related Components: {", ".join(related_abstractions)}
 
-# Key Files
-{json.dumps(abstraction["files"], indent=2)}
-
-# Related Components
-{", ".join(related_abstractions)}
-
-# Instructions
-Write a comprehensive tutorial chapter about {abstraction["name"]}. The chapter should:
-1. Start with a clear introduction to the component
-2. Explain its purpose and role in the overall system
-3. Describe how it works and interacts with other components
-4. Include code examples and explanations
-5. End with a summary and transition to the next chapter
-
+# Tutorial Depth
+The tutorial should be at a {depth} level:
 """
 
         # Add depth-specific instructions
         if depth == "basic":
             prompt += """
-# Depth: Basic
 - Focus on high-level concepts and simple explanations
 - Avoid complex technical details
-- Use analogies and simple examples
-- Assume the reader has minimal programming experience
-"""
-        elif depth == "intermediate":
-            prompt += """
-# Depth: Intermediate
-- Balance conceptual explanations with technical details
-- Include relevant code examples with explanations
-- Discuss design patterns and architectural decisions
-- Assume the reader has moderate programming experience
+- Use simple code examples
+- Explain concepts in a way that beginners can understand
 """
         elif depth == "advanced":
             prompt += """
-# Depth: Advanced
-- Provide in-depth technical explanations
-- Include detailed code examples and edge cases
-- Discuss performance considerations and optimizations
-- Analyze design decisions and trade-offs
-- Assume the reader has significant programming experience
+- Include in-depth technical details
+- Explain complex interactions and edge cases
+- Use detailed code examples
+- Assume the reader has a strong technical background
+"""
+        else:  # intermediate (default)
+            prompt += """
+- Balance conceptual explanations with technical details
+- Include relevant code examples
+- Explain important interactions with other components
+- Assume the reader has some programming experience
 """
 
-        # Add diagram information if available
-        if generate_diagrams and diagrams:
+        # Add language-specific instructions
+        if language != "en":
+            prompt += f"""
+# Language
+Write the tutorial in {language} language. Ensure that technical terms are correctly translated or kept in English if that's the convention in {language}.
+"""
+
+        # Add file content
+        prompt += """
+# Files
+Here are the contents of the relevant files:
+"""
+
+        for file_path in abstraction_files:
+            if file_path in files:
+                file_content = files[file_path]
+                prompt += f"""
+## {file_path}
+```
+{file_content[:2000]}  # Limit to 2000 characters to avoid token limits
+```
+"""
+
+        # Add related abstractions
+        if related_abstractions:
+            prompt += """
+# Related Components
+This component interacts with the following components:
+"""
+
+            for related in related_abstractions:
+                prompt += f"- {related}\n"
+
+        # Add diagrams
+        if diagrams:
             prompt += """
 # Diagrams
 Include references to the following diagrams where appropriate:
@@ -344,34 +325,39 @@ Include references to the following diagrams where appropriate:
         # Format the output
         prompt += """
 # Output Format
-Format your response as a Markdown document with the following structure:
-- Title (H1): "Chapter X: Component Name"
-- Introduction
-- Main sections with appropriate headings (H2, H3)
-- Code examples in Markdown code blocks
-- Summary
-- "Next Chapter" and "Previous Chapter" links at the end
+Write a comprehensive tutorial chapter in Markdown format. Include:
+1. A clear heading with the chapter number and title
+2. An introduction explaining the purpose and importance of this component
+3. Detailed explanations of how the component works
+4. Code examples with explanations
+5. Interactions with other components
+6. Best practices and common patterns
+7. A summary of key points
 
-Do not include any explanatory text outside the chapter content.
+Make the tutorial engaging, clear, and informative. Use proper Markdown formatting for headings, code blocks, lists, etc.
 """
 
         return prompt
 
-    def _sanitize_filename(self, filename: str) -> str:
-        """Sanitize a filename by replacing invalid characters.
+    def _format_chapter_content(
+        self, content: str, chapter_number: int, chapter_title: str
+    ) -> str:
+        """Format the chapter content.
 
         Args:
-            filename (str): The filename to sanitize
+            content (str): The raw chapter content
+            chapter_number (int): The chapter number
+            chapter_title (str): The chapter title
 
         Returns:
-            str: The sanitized filename
+            str: The formatted chapter content
         """
-        # Replace spaces with underscores
-        filename = filename.replace(" ", "_")
+        # Ensure the chapter starts with a proper heading
+        if not content.strip().startswith(f"# Chapter {chapter_number}"):
+            content = f"# Chapter {chapter_number}: {chapter_title}\n\n{content}"
 
-        # Remove invalid characters
-        invalid_chars = r'<>:"/\|?*'
-        for char in invalid_chars:
-            filename = filename.replace(char, "")
+        # Add attribution to the end of the chapter
+        attribution = "\n\n---\n\n*This tutorial was generated by [🪄EnlightenAI🔍](https://github.com/Mathews-Tom/EnlightenAI), an intelligent codebase explainer.*"
+        content += attribution
 
-        return filename.lower()
+        return content
