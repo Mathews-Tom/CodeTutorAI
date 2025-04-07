@@ -51,8 +51,37 @@ cd EnlightenAI
 
 ### 2. Install Dependencies
 
+#### Using pip
+
 ```bash
-pip install -r requirements.txt
+# Install from the current directory
+pip install -e .
+
+# Or install directly from GitHub
+pip install git+https://github.com/Mathews-Tom/EnlightenAI.git
+```
+
+#### Using uv (faster installation)
+
+```bash
+# Install uv if you don't have it
+pip install uv
+
+# Install from the current directory
+uv pip install -e .
+
+# Or install directly from GitHub
+uv pip install git+https://github.com/Mathews-Tom/EnlightenAI.git
+```
+
+#### For Development
+
+```bash
+# Using the provided script
+./install_dev.sh
+
+# Or manually
+pip install -e .
 ```
 
 ### 3. Set Up Environment Variables
@@ -68,11 +97,28 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ### 4. Run EnlightenAI on a GitHub Repo
 
+#### As a Command-Line Tool
+
+After installation, you can run EnlightenAI directly from the command line:
+
 ```bash
-python main.py https://github.com/SomeUser/SomeProject --output-dir ./docs
+# Using the command-line tool
+enlightenai https://github.com/SomeUser/SomeProject --output-dir ./docs
 ```
 
-#### Optional flags
+#### As a Python Module
+
+You can also run EnlightenAI as a Python module:
+
+```bash
+# Using Python module syntax
+python -m enlightenai.cli https://github.com/SomeUser/SomeProject --output-dir ./docs
+
+# Or with python3 explicitly
+python3 -m enlightenai.cli https://github.com/SomeUser/SomeProject --output-dir ./docs
+```
+
+#### Optional Flags
 
 ```bash
   --web-url https://example.com/docs  # Additional web context
@@ -80,13 +126,24 @@ python main.py https://github.com/SomeUser/SomeProject --output-dir ./docs
   --exclude "test_*,*__pycache__*"    # File patterns to exclude
   --llm-provider openai               # LLM provider (openai, anthropic, palm)
   --api-key YOUR_API_KEY              # Override API key from .env
+  --batch-size 2                      # Number of chapters to generate in parallel
+  --output-formats markdown,html,pdf  # Output formats to generate
   --verbose                           # Enable verbose output
 ```
 
 ### 5. Run with Mock Data for Testing
 
+You can test EnlightenAI with mock data to avoid making actual API calls:
+
 ```bash
-python test_mock.py --verbose
+# Using Python module syntax
+python -m enlightenai.test_mock --verbose
+
+# Or with python3 explicitly
+python3 -m enlightenai.test_mock --verbose
+
+# With additional options
+python -m enlightenai.test_mock --output-formats markdown,html --batch-size 2 --verbose
 ```
 
 ---
@@ -95,26 +152,37 @@ python test_mock.py --verbose
 
 ```plaintext
 EnlightenAI/
-├── main.py                # CLI entry point
-├── flow.py                # Defines the AI workflow
-├── nodes/                 # Node implementations for each step
-│   ├── __init__.py        # Base Node class
-│   ├── fetch_repo_gitin.py # GitHub repository fetching
-│   ├── fetch_web.py       # Web content fetching
-│   ├── identify_abstractions.py # Abstraction identification
-│   ├── analyze_relationships.py # Relationship analysis
-│   ├── order_chapters.py  # Chapter ordering
-│   ├── write_chapters.py  # Chapter writing
-│   └── combine_tutorial.py # Tutorial combination
-├── utils/                 # Utility scripts
-│   ├── __init__.py        # Package initialization
-│   ├── call_llm.py        # LLM client
-│   ├── formatting.py      # Formatting utilities
-│   └── mock_data.py       # Mock data for testing
+├── src/                  # Source code directory
+│   └── enlightenai/      # Main package
+│       ├── __init__.py    # Package initialization
+│       ├── cli.py         # CLI entry point
+│       ├── flow.py        # Defines the AI workflow
+│       ├── test_enlightenai.py # Test script for real data
+│       ├── test_mock.py    # Test script for mock data
+│       ├── nodes/         # Node implementations for each step
+│       │   ├── __init__.py # Node package initialization
+│       │   ├── node.py     # Base Node class
+│       │   ├── fetch_repo_gitin.py # GitHub repository fetching
+│       │   ├── fetch_web.py # Web content fetching
+│       │   ├── identify_abstractions.py # Abstraction identification
+│       │   ├── analyze_relationships.py # Relationship analysis
+│       │   ├── order_chapters.py # Chapter ordering
+│       │   ├── write_chapters.py # Chapter writing
+│       │   └── combine_tutorial.py # Tutorial combination
+│       └── utils/         # Utility scripts
+│           ├── __init__.py # Utils package initialization
+│           ├── call_llm.py # LLM client compatibility layer
+│           ├── llm_client.py # Enhanced LLM client
+│           ├── formatting.py # Formatting utilities
+│           └── mock_data.py # Mock data for testing
 ├── docs/                  # Output tutorials
-├── test_enlightenai.py    # Test script for real data
-├── test_mock.py           # Test script for mock data
+├── assets/                # Project assets
+├── setup.py               # Package setup script
 ├── requirements.txt       # Python dependencies
+├── install_dev.sh         # Development installation script
+├── .env.example           # Example environment variables
+├── implementation_plan.md # Implementation plan
+├── LICENSE                # MIT License
 └── README.md              # You're here!
 ```
 
@@ -125,7 +193,11 @@ EnlightenAI/
 Explore the `docs/` folder or try EnlightenAI on a real repo like:
 
 ```bash
-python main.py --repo-url https://github.com/tiangolo/fastapi
+# As a command-line tool
+enlightenai https://github.com/tiangolo/fastapi
+
+# Or as a Python module
+python -m enlightenai.cli https://github.com/tiangolo/fastapi
 ```
 
 Check back soon for live demo links and tutorial showcases!
@@ -140,6 +212,8 @@ Check back soon for live demo links and tutorial showcases!
 - **gitin** for GitHub repository crawling
 - **crawl4ai** for web content crawling
 - **tqdm** for progress tracking
+- **tiktoken** for token counting
+- **tenacity** for retry logic
 - **Markdown + MermaidJS** for documentation
 
 ---
