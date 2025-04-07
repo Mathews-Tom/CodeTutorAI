@@ -172,8 +172,12 @@ class ProgressManager:
             position (int, optional): The position of the progress bar
 
         Returns:
-            tqdm: The progress bar for the task
+            tqdm: The progress bar for the task, or None if total is 0
         """
+        # Don't create a progress bar if there's nothing to process
+        if total <= 0:
+            return None
+
         if task_name not in self.task_pbars:
             desc = desc or f"    {task_name}"
             self.task_pbars[task_name] = tqdm(

@@ -55,19 +55,22 @@ class CombineTutorialNode(Node):
         if verbose:
             print(f"Created index file: {index_path}")
 
-        # Generate additional output formats
-        if "html" in output_formats:
-            self._generate_html(context, repo_name, chapters)
+        # Generate additional output formats only if we have chapters
+        if chapters:
+            if "html" in output_formats:
+                self._generate_html(context, repo_name, chapters)
 
-        if "pdf" in output_formats:
-            self._generate_pdf_ready(context, repo_name, chapters)
+            if "pdf" in output_formats:
+                self._generate_pdf_ready(context, repo_name, chapters)
 
-        if "github_pages" in output_formats:
-            self._generate_github_pages(context, repo_name, chapters)
+            if "github_pages" in output_formats:
+                self._generate_github_pages(context, repo_name, chapters)
 
-        # Generate HTML viewer
-        if "viewer" in output_formats or "html_viewer" in output_formats:
-            self._generate_html_viewer(context, repo_name, chapters)
+            # Generate HTML viewer
+            if "viewer" in output_formats or "html_viewer" in output_formats:
+                self._generate_html_viewer(context, repo_name, chapters)
+        elif verbose:
+            print("No chapters were generated, skipping additional output formats.")
 
         # Update the context
         context["tutorial_index"] = index_path
@@ -89,15 +92,18 @@ class CombineTutorialNode(Node):
         """
         # Create the table of contents
         toc_items = []
-        for chapter in chapters:
-            chapter_filename = chapter.get(
-                "filename", f"chapter_{chapter['number']:02d}.md"
-            )
-            toc_items.append(
-                f"{chapter['number']}. [{chapter['title']}](chapters/{chapter_filename})"
-            )
+        if chapters:
+            for chapter in chapters:
+                chapter_filename = chapter.get(
+                    "filename", f"chapter_{chapter['number']:02d}.md"
+                )
+                toc_items.append(
+                    f"{chapter['number']}. [{chapter['title']}](chapters/{chapter_filename})"
+                )
 
-        toc = "\n".join(toc_items)
+            toc = "\n".join(toc_items)
+        else:
+            toc = "*No chapters were generated. Please try again with different parameters.*"
 
         # Create the index content
         index_content = f"""# {repo_name} - Code Walkthrough
@@ -247,7 +253,7 @@ This tutorial provides a comprehensive walkthrough of the {repo_name} codebase. 
 </head>
 <body>
     <h1>{repo_name} - Code Walkthrough</h1>
-    
+
     <div class="toc">
         <h2>Table of Contents</h2>
         <ul>
@@ -259,7 +265,7 @@ This tutorial provides a comprehensive walkthrough of the {repo_name} codebase. 
 
         html_content += """        </ul>
     </div>
-    
+
 """
 
         # Add chapters

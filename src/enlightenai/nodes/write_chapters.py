@@ -173,13 +173,15 @@ class WriteChaptersNode(Node):
             # Create a progress bar for chapters
             chapters_pbar = None
             if progress_manager:
-                chapters_pbar = progress_manager.get_task_pbar(
-                    "Chapters",
-                    len(ordered_chapters),
-                    desc="    Generating chapters",
-                    unit="chapter",
-                )
-            elif verbose:
+                # Make sure we have at least one chapter to process
+                if ordered_chapters:
+                    chapters_pbar = progress_manager.get_task_pbar(
+                        "Chapters",
+                        len(ordered_chapters),
+                        desc="    Generating chapters",
+                        unit="chapter",
+                    )
+            elif verbose and ordered_chapters:
                 chapters_pbar = tqdm(
                     total=len(ordered_chapters),
                     desc="Generating chapters",
@@ -190,18 +192,20 @@ class WriteChaptersNode(Node):
             if progress_manager:
                 progress_manager.update_node_progress(30)
 
-            # Submit all tasks
-            future_to_index = {
-                executor.submit(generate_chapter, i): i
-                for i in range(len(ordered_chapters))
-            }
+            # Only submit tasks if we have chapters to process
+            if ordered_chapters:
+                # Submit all tasks
+                future_to_index = {
+                    executor.submit(generate_chapter, i): i
+                    for i in range(len(ordered_chapters))
+                }
 
-            # Process results as they complete
-            for future in future_to_index:
-                chapter = future.result()
-                chapters.append(chapter)
-                if chapters_pbar:
-                    chapters_pbar.update(1)
+                # Process results as they complete
+                for future in future_to_index:
+                    chapter = future.result()
+                    chapters.append(chapter)
+                    if chapters_pbar:
+                        chapters_pbar.update(1)
 
             # Close the progress bar if we created it
             if progress_manager:
