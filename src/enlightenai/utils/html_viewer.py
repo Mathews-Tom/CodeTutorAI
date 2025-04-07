@@ -55,12 +55,20 @@ def create_html_viewer(
     viewer_chapters_dir = os.path.join(viewer_dir, "chapters")
     os.makedirs(viewer_chapters_dir, exist_ok=True)
 
-    for chapter in chapters:
-        if "filename" in chapter:
-            src_path = os.path.join(chapters_dir, chapter["filename"])
-            dst_path = os.path.join(viewer_chapters_dir, chapter["filename"])
-            if os.path.exists(src_path):
-                shutil.copy2(src_path, dst_path)
+    # Create a default chapter if no chapters are available
+    if not chapters:
+        default_chapter_path = os.path.join(viewer_chapters_dir, "no_chapters.md")
+        with open(default_chapter_path, "w", encoding="utf-8") as f:
+            f.write(
+                "# No Chapters Available\n\nNo chapters were generated for this repository. Please try again with different parameters."
+            )
+    else:
+        for chapter in chapters:
+            if "filename" in chapter:
+                src_path = os.path.join(chapters_dir, chapter["filename"])
+                dst_path = os.path.join(viewer_chapters_dir, chapter["filename"])
+                if os.path.exists(src_path):
+                    shutil.copy2(src_path, dst_path)
 
     # Copy diagram files to the viewer directory if available
     if diagrams:
@@ -103,12 +111,18 @@ def _get_html(
     """
     # Create the table of contents
     toc_items = []
-    for chapter in chapters:
-        toc_items.append(
-            f'<li><a href="#" data-chapter="{chapter["filename"]}">'
-            f"Chapter {chapter['number']}: {chapter['title']}</a></li>"
-        )
-    toc_html = "\n".join(toc_items)
+    if chapters:
+        for chapter in chapters:
+            if "filename" in chapter:
+                toc_items.append(
+                    f'<li><a href="#" data-chapter="{chapter["filename"]}">'
+                    f"Chapter {chapter['number']}: {chapter['title']}</a></li>"
+                )
+
+    if toc_items:
+        toc_html = "\n".join(toc_items)
+    else:
+        toc_html = "<li>No chapters available</li>"
 
     # Create the diagrams section if available
     diagrams_html = ""
@@ -344,14 +358,14 @@ body {
     .container {
         flex-direction: column;
     }
-    
+
     .sidebar {
         width: 100%;
         position: static;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
     }
-    
+
     .content {
         margin-left: 0;
         max-width: 100%;
@@ -374,34 +388,34 @@ document.addEventListener('DOMContentLoaded', function() {
         theme: 'default',
         securityLevel: 'loose'
     });
-    
+
     // Get elements
     const chapterLinks = document.querySelectorAll('.toc a');
     const diagramLinks = document.querySelectorAll('.diagrams-section a');
     const chapterContent = document.getElementById('chapter-content');
-    
+
     // Add click event listeners to chapter links
     chapterLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            
+
             // Remove active class from all links
             chapterLinks.forEach(l => l.classList.remove('active'));
             diagramLinks.forEach(l => l.classList.remove('active'));
-            
+
             // Add active class to clicked link
             this.classList.add('active');
-            
+
             // Get chapter filename
             const chapterFile = this.getAttribute('data-chapter');
-            
+
             // Load chapter content
             fetch(`chapters/${chapterFile}`)
                 .then(response => response.text())
                 .then(markdown => {
                     // Render markdown
                     chapterContent.innerHTML = marked.parse(markdown);
-                    
+
                     // Render Mermaid diagrams
                     mermaid.init(undefined, document.querySelectorAll('.mermaid'));
                 })
@@ -411,29 +425,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     });
-    
+
     // Add click event listeners to diagram links
     diagramLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            
+
             // Remove active class from all links
             chapterLinks.forEach(l => l.classList.remove('active'));
             diagramLinks.forEach(l => l.classList.remove('active'));
-            
+
             // Add active class to clicked link
             this.classList.add('active');
-            
+
             // Get diagram filename
             const diagramFile = this.getAttribute('data-diagram');
-            
+
             // Load diagram content
             fetch(`diagrams/${diagramFile}`)
                 .then(response => response.text())
                 .then(markdown => {
                     // Render markdown
                     chapterContent.innerHTML = marked.parse(markdown);
-                    
+
                     // Render Mermaid diagrams
                     mermaid.init(undefined, document.querySelectorAll('.mermaid'));
                 })
@@ -443,10 +457,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         });
     });
-    
+
     // Load the first chapter by default if available
     if (chapterLinks.length > 0) {
         chapterLinks[0].click();
+    } else {
+        // If no chapters are available, load the default chapter
+        fetch('chapters/no_chapters.md')
+            .then(response => response.text())
+            .then(markdown => {
+                // Render markdown
+                chapterContent.innerHTML = marked.parse(markdown);
+            })
+            .catch(error => {
+                console.error('Error loading default chapter:', error);
+                chapterContent.innerHTML = '<h1>No Chapters Available</h1><p>No chapters were generated for this repository. Please try again with different parameters.</p>';
+            });
     }
 });
 """
