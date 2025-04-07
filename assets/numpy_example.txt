@@ -1,0 +1,6 @@
+NumPy Tutorial Screenshot
+- Core Array Object
+- Array Creation
+- Array Indexing and Slicing
+- Broadcasting
+- Universal Functions (ufuncs)

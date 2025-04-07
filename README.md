@@ -1,8 +1,17 @@
+```
+ ______      _ _       _     _              _    ___
+|  ____|    | (_)     | |   | |            | |  |__ \
+| |__   _ __| |_  __ _| |__ | |_ ___ _ __  / \     ) |
+|  __| | '_ \ | |/ _` | '_ \| __/ _ \ '_ \/ _ \   / /
+| |____| | | | | | (_| | | | | ||  __/ | / ___ \ / /_
+|______|_| |_|_|_|\__, |_| |_|\__\___|_|/_/   \_\____|
+                   __/ |
+                  |___/
+```
+
 # 🌟 🔍 EnlightenAI – Illuminate the Hidden Logic Within Codebases
 
 >*Lost in someone else's GitHub project? Build an AI Code Explainer to generate clear explanations! This tutorial shows you how to create an agent that analyzes repositories and produces easy-to-understand guides.*
-
-![EnlightenAI Banner](assets/EnlightenAI_Banner.png)
 
 **EnlightenAI** is an AI-powered system that transforms any GitHub repository into a beginner-friendly, tutorial-style walkthrough. It analyzes the structure, abstractions, and relationships within a codebase to produce a multi-chapter guide that helps you deeply understand the inner workings of unfamiliar projects.
 
@@ -188,19 +197,39 @@ EnlightenAI/
 
 ---
 
-## 📘 Example Output
+## 📘 Example Outputs
 
-Explore the `docs/` folder or try EnlightenAI on a real repo like:
+EnlightenAI generates comprehensive tutorials for any GitHub repository. Here are some examples:
+
+### FastAPI Tutorial
+
+A comprehensive tutorial explaining the FastAPI framework, including its routing system, dependency injection, and more.
+
+[View FastAPI Tutorial](docs/examples/fastapi/index.md)
+
+### NumPy Tutorial
+
+A detailed walkthrough of the NumPy library, covering arrays, broadcasting, universal functions, and more.
+
+[View NumPy Tutorial](docs/examples/numpy/index.md)
+
+### AutoGen Tutorial
+
+An in-depth explanation of the AutoGen framework for building multi-agent systems with LLMs.
+
+[View AutoGen Tutorial](docs/examples/autogen/index.md)
+
+### Try It Yourself
+
+Generate your own tutorial by running:
 
 ```bash
 # As a command-line tool
-enlightenai https://github.com/tiangolo/fastapi
+enlightenai https://github.com/username/repository
 
 # Or as a Python module
-python -m enlightenai.cli https://github.com/tiangolo/fastapi
+python -m enlightenai.cli https://github.com/username/repository
 ```
-
-Check back soon for live demo links and tutorial showcases!
 
 ---
 
