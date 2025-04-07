@@ -1,0 +1,13 @@
+[project]
+name = "enlightenai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "crawl4ai>=0.5.0.post8",
+    "gitin>=0.1.0",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+    "tqdm>=4.67.1",
+]

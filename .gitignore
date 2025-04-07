@@ -1,3 +1,11 @@
+.DS_Store
+
+# Output directories
+docs/
+test_output/
+mock_output/
+
+# Test files
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
