@@ -91,6 +91,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Number of chapters to generate in parallel (default: 1)",
+    )
+
+    parser.add_argument(
         "--fetch-repo-metadata",
         action="store_true",
         default=True,
@@ -124,6 +131,7 @@ def main():
         "max_file_size": args.max_file_size,
         "max_chunk_size": args.max_chunk_size,
         "ordering_method": args.ordering_method,
+        "batch_size": args.batch_size,
         "fetch_repo_metadata": args.fetch_repo_metadata,
         "verbose": args.verbose,
         "files": {},  # Will store {path: content} pairs

@@ -5,6 +5,7 @@ This module provides utilities for formatting prompts and Markdown content.
 """
 
 import os
+import re
 from typing import Any, Dict, List
 
 
@@ -94,3 +95,32 @@ def create_table_of_contents(chapters: List[Dict[str, Any]]) -> str:
         toc += f"{i + 1}. [{title}]({filename})\n"
 
     return toc
+
+
+def format_markdown(content: str) -> str:
+    """Format and clean up Markdown content.
+
+    Args:
+        content (str): The Markdown content to format
+
+    Returns:
+        str: Formatted Markdown content
+    """
+    # Remove extra whitespace
+    content = content.strip()
+
+    # Fix code blocks (ensure proper spacing)
+    content = re.sub(r"```(\w*)\s*\n", r"```\1\n", content)
+    content = re.sub(r"\n\s*```", r"\n```", content)
+
+    # Ensure proper header formatting (space after #)
+    content = re.sub(r"^(#+)([^\s#])", r"\1 \2", content, flags=re.MULTILINE)
+
+    # Fix list formatting (ensure proper spacing)
+    content = re.sub(r"^(\s*[-*+])([^\s])", r"\1 \2", content, flags=re.MULTILINE)
+    content = re.sub(r"^(\s*\d+\.)([^\s])", r"\1 \2", content, flags=re.MULTILINE)
+
+    # Fix double blank lines (more than 2 consecutive newlines)
+    content = re.sub(r"\n{3,}", r"\n\n", content)
+
+    return content
