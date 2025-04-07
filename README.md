@@ -116,18 +116,22 @@ EnlightenAI/
 │       │   ├── order_chapters.py # Chapter ordering
 │       │   ├── write_chapters.py # Chapter writing
 │       │   └── combine_tutorial.py # Tutorial combination
+│       ├── test_enlightenai.py # Test script for real data
+│       ├── test_mock.py    # Test script for mock data
 │       └── utils/         # Utility scripts
 │           ├── __init__.py # Utils package initialization
 │           ├── call_llm.py # LLM client compatibility layer
 │           ├── llm_client.py # Enhanced LLM client
 │           ├── formatting.py # Formatting utilities
 │           └── mock_data.py # Mock data for testing
-├── nodes/                 # Node implementations (for development)
-├── utils/                 # Utility scripts (for development)
 ├── docs/                  # Output tutorials
+├── assets/                # Project assets
 ├── setup.py               # Package setup script
 ├── requirements.txt       # Python dependencies
 ├── install_dev.sh         # Development installation script
+├── .env.example           # Example environment variables
+├── implementation_plan.md # Implementation plan
+├── LICENSE                # MIT License
 └── README.md              # You're here!
 ```
 
