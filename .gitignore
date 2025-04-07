@@ -2,8 +2,9 @@
 
 # Output directories
 backup/
-test_output/
 mock_output/
+test_output/
+tutorial_output
 
 # Test files
 # Byte-compiled / optimized / DLL files
