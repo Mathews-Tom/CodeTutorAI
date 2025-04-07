@@ -72,6 +72,20 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--ordering-method",
+        choices=["auto", "topological", "learning_curve", "llm"],
+        default="auto",
+        help="Method to use for chapter ordering (default: auto)",
+    )
+
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Number of chapters to generate in parallel (default: 1)",
+    )
+
+    parser.add_argument(
         "--fetch-repo-metadata",
         action="store_true",
         default=True,

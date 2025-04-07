@@ -85,6 +85,20 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--ordering-method",
+        choices=["auto", "topological", "learning_curve", "llm"],
+        default="auto",
+        help="Method to use for chapter ordering (default: auto)",
+    )
+
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+        help="Number of chapters to generate in parallel (default: 1)",
+    )
+
+    parser.add_argument(
         "--fetch-repo-metadata",
         action="store_true",
         default=True,
@@ -130,9 +144,11 @@ def main():
         "github_token": args.github_token or os.environ.get("GITHUB_API_KEY"),
         "max_file_size": args.max_file_size,
         "max_chunk_size": args.max_chunk_size,
+
         "batch_size": args.batch_size,
         "output_formats": args.output_formats.split(","),
         "ordering_method": args.ordering_method,
+
         "fetch_repo_metadata": args.fetch_repo_metadata,
         "verbose": args.verbose,
         "files": {},  # Will store {path: content} pairs
