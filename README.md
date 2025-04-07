@@ -1,15 +1,35 @@
-# 🌟 🔍 EnlightenAI – Illuminate the Hidden Logic Within Codebases
+# 🪄 EnlightenAI – Illuminate the Hidden Logic Within Codebases 🔍
 
 ```plaintext
-    .*      _____       _     _____       ___
-   /*\     |  ___|     / \   |_   _|     /   \
-  /***\    | |__      / _ \    | |      /  O  \
- /     \   |  __|    / ___ \   | |     /  ___  \
-/       \  | |____  /_/   \_\  | |    /  /   \  \
-\       /  |______||_______/  |_|    |  |   |  |
- \     /                              \  \___/  /
-  \___/                                \       /
-                                        \_____/
+
+
+     ##### ##                 ###                             /                                                ##                #####  #
+  ######  /### /               ###      #                   #/                                              /####             ######  /
+ /#   /  / ###/                 ##     ###                  ##            #                                /  ###            /#   /  /
+/    /  /   ##                  ##      #                   ##           ##                                   /##           /    /  /
+    /  /                        ##                          ##           ##                                  /  ##              /  /
+   ## ##         ###  /###      ##    ###         /###      ##  /##    ########    /##    ###  /###          /  ##             ## ##
+   ## ##          ###/ #### /   ##     ###       /  ###  /  ## / ###  ########    / ###    ###/ #### /      /    ##            ## ##
+   ## ######       ##   ###/    ##      ##      /    ###/   ##/   ###    ##      /   ###    ##   ###/       /    ##          /### ##
+   ## #####        ##    ##     ##      ##     ##     ##    ##     ##    ##     ##    ###   ##    ##       /      ##        / ### ##
+   ## ##           ##    ##     ##      ##     ##     ##    ##     ##    ##     ########    ##    ##       /########           ## ##
+   #  ##           ##    ##     ##      ##     ##     ##    ##     ##    ##     #######     ##    ##      /        ##     ##   ## ##
+      /            ##    ##     ##      ##     ##     ##    ##     ##    ##     ##          ##    ##      #        ##    ###   #  /
+  /##/         /   ##    ##     ##      ##     ##     ##    ##     ##    ##     ####    /   ##    ##     /####      ##    ###    /
+ /  ##########/    ###   ###    ### /   ### /   ########    ##     ##    ##      ######/    ###   ###   /   ####    ## /   #####/
+/     ######        ###   ###    ##/     ##/      ### ###    ##    ##     ##      #####      ###   ### /     ##      #/      ###
+#                                                      ###         /                                   #
+ ##                                              ####   ###       /                                     ##
+                                               /######  /#       /
+                                              /     ###/        /
+
+```
+
+```plaintext
+   _     _     _     _     _
+  / \   / \   / \   / \   / \
+ (🪄 ) ( E ) ( A ) ( I ) (🔍 )
+  \_/   \_/   \_/   \_/   \_/
 ```
 
 >*Lost in someone else's GitHub project? Build an AI Code Explainer to generate clear explanations! This tutorial shows you how to create an agent that analyzes repositories and produces easy-to-understand guides.*
@@ -28,6 +48,10 @@ EnlightenAI acts as a digital oracle for codebases — using AI to reveal the de
 - 🕸️ Maps out relationships and architecture visually
 - 📘 Generates structured Markdown tutorials
 - 🌐 Output is ready for GitHub Pages or docs hosting
+- 🌍 Supports multiple languages for global accessibility
+- 📊 Generates Mermaid diagrams for visual understanding
+- 🎯 Adjustable depth levels for different expertise levels
+- 🖥️ Interactive HTML viewer for better reading experience
 
 ---
 
@@ -137,11 +161,89 @@ python3 -m enlightenai.cli https://github.com/SomeUser/SomeProject --output-dir 
   --llm-provider openai               # LLM provider (openai, anthropic, palm)
   --api-key YOUR_API_KEY              # Override API key from .env
   --batch-size 2                      # Number of chapters to generate in parallel
-  --output-formats markdown,html,pdf  # Output formats to generate
+  --output-formats markdown,html,pdf,viewer  # Output formats to generate
   --verbose                           # Enable verbose output
+
+  # New features in Phase 10
+  --depth basic|intermediate|advanced # Depth of the tutorial (default: intermediate)
+  --language en                       # Language for the tutorial (ISO 639-1 code)
+  --diagrams                          # Generate Mermaid diagrams for classes and components
+  --open-viewer                       # Open the HTML viewer in the default web browser
 ```
 
-### 5. Run with Mock Data for Testing
+### 5. Interactive HTML Viewer
+
+EnlightenAI can generate an interactive HTML viewer for the tutorial:
+
+```bash
+# Generate a tutorial with the HTML viewer
+enlightenai https://github.com/username/repository --output-formats markdown,viewer
+
+# Generate and automatically open the viewer in your browser
+enlightenai https://github.com/username/repository --output-formats viewer --open-viewer
+```
+
+The HTML viewer provides:
+
+- A clean, responsive interface for reading the tutorial
+- Navigation sidebar with table of contents
+- Automatic rendering of Mermaid diagrams
+- Support for light and dark mode
+
+### 6. Multilingual Support
+
+EnlightenAI can generate tutorials in multiple languages:
+
+```bash
+# Generate a tutorial in Spanish
+enlightenai https://github.com/username/repository --language es
+
+# Generate a tutorial in French
+enlightenai https://github.com/username/repository --language fr
+
+# Generate a tutorial in Japanese
+enlightenai https://github.com/username/repository --language ja
+```
+
+Supported languages depend on the LLM provider's capabilities. Use ISO 639-1 language codes.
+
+### 7. Tutorial Depth
+
+EnlightenAI can generate tutorials at different levels of detail:
+
+```bash
+# Generate a basic tutorial for beginners
+enlightenai https://github.com/username/repository --depth basic
+
+# Generate an intermediate tutorial (default)
+enlightenai https://github.com/username/repository --depth intermediate
+
+# Generate an advanced tutorial with in-depth technical details
+enlightenai https://github.com/username/repository --depth advanced
+```
+
+The depth option adjusts the level of technical detail, code examples, and explanations to match the target audience's expertise level.
+
+### 8. Mermaid Diagrams
+
+EnlightenAI can generate Mermaid diagrams to visualize the codebase structure:
+
+```bash
+# Generate a tutorial with Mermaid diagrams
+enlightenai https://github.com/username/repository --diagrams
+
+# Generate diagrams and view them in the HTML viewer
+enlightenai https://github.com/username/repository --diagrams --output-formats viewer --open-viewer
+```
+
+The diagrams include:
+
+- **Class Diagrams**: Show class hierarchies, inheritance relationships, and methods
+- **Component Diagrams**: Visualize module dependencies and interactions
+
+These diagrams help understand the overall architecture and relationships between different parts of the codebase.
+
+### 9. Run with Mock Data for Testing
 
 You can test EnlightenAI with mock data to avoid making actual API calls:
 
