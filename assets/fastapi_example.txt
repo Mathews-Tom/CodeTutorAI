@@ -1,0 +1,6 @@
+FastAPI Tutorial Screenshot
+- Main Application Structure
+- Routing System
+- Request Validation with Pydantic
+- Dependency Injection System
+- Security and Authentication

@@ -1,8 +1,18 @@
 # 🌟 🔍 EnlightenAI – Illuminate the Hidden Logic Within Codebases
 
->*Lost in someone else's GitHub project? Build an AI Code Explainer to generate clear explanations! This tutorial shows you how to create an agent that analyzes repositories and produces easy-to-understand guides.*
+```plaintext
+    .*      _____       _     _____       ___
+   /*\     |  ___|     / \   |_   _|     /   \
+  /***\    | |__      / _ \    | |      /  O  \
+ /     \   |  __|    / ___ \   | |     /  ___  \
+/       \  | |____  /_/   \_\  | |    /  /   \  \
+\       /  |______||_______/  |_|    |  |   |  |
+ \     /                              \  \___/  /
+  \___/                                \       /
+                                        \_____/
+```
 
-![EnlightenAI Banner](assets/EnlightenAI_Banner.png)
+>*Lost in someone else's GitHub project? Build an AI Code Explainer to generate clear explanations! This tutorial shows you how to create an agent that analyzes repositories and produces easy-to-understand guides.*
 
 **EnlightenAI** is an AI-powered system that transforms any GitHub repository into a beginner-friendly, tutorial-style walkthrough. It analyzes the structure, abstractions, and relationships within a codebase to produce a multi-chapter guide that helps you deeply understand the inner workings of unfamiliar projects.
 
