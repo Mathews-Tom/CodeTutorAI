@@ -57,15 +57,36 @@ class WriteChaptersNode(Node):
         relationships = context.get("relationships", {})
         files = context.get("files", {})
 
+        # Get the progress manager
+        progress_manager = context.get("progress_manager")
+
+        # Update node progress
+        if progress_manager:
+            progress_manager.update_node_progress(20)
+
+        # Create the chapters directory
+        chapters_dir = os.path.join(output_dir, "chapters")
+        os.makedirs(chapters_dir, exist_ok=True)
+
+        # Check if we have any chapters to generate
+        if not ordered_chapters:
+            if verbose:
+                print("No chapters to generate. Skipping chapter generation.")
+
+            # Update the context with an empty chapters list
+            context["chapters"] = []
+
+            # Complete node progress
+            if progress_manager:
+                progress_manager.update_node_progress(100)
+
+            return None
+
         if verbose:
             print(f"Generating {len(ordered_chapters)} chapters...")
             print(f"Tutorial depth: {depth}")
             print(f"Tutorial language: {language}")
             print(f"Generate diagrams: {generate_diagrams}")
-
-        # Create the chapters directory
-        chapters_dir = os.path.join(output_dir, "chapters")
-        os.makedirs(chapters_dir, exist_ok=True)
 
         # Generate diagrams if requested
         diagrams = {}
@@ -86,12 +107,9 @@ class WriteChaptersNode(Node):
             if verbose:
                 print(f"Saved diagrams to {diagrams_dir}")
 
-        # Get the progress manager
-        progress_manager = context.get("progress_manager")
-
         # Update node progress
         if progress_manager:
-            progress_manager.update_node_progress(20)
+            progress_manager.update_node_progress(30)
 
         # Generate chapters in parallel
         chapters = []
@@ -172,15 +190,13 @@ class WriteChaptersNode(Node):
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
             # Create a progress bar for chapters
             chapters_pbar = None
-            if progress_manager:
-                # Make sure we have at least one chapter to process
-                if ordered_chapters:
-                    chapters_pbar = progress_manager.get_task_pbar(
-                        "Chapters",
-                        len(ordered_chapters),
-                        desc="    Generating chapters",
-                        unit="chapter",
-                    )
+            if progress_manager and ordered_chapters:
+                chapters_pbar = progress_manager.get_task_pbar(
+                    "Chapters",
+                    len(ordered_chapters),
+                    desc="    Generating chapters",
+                    unit="chapter",
+                )
             elif verbose and ordered_chapters:
                 chapters_pbar = tqdm(
                     total=len(ordered_chapters),
@@ -188,30 +204,25 @@ class WriteChaptersNode(Node):
                     unit="chapter",
                 )
 
-            # Update node progress
-            if progress_manager:
-                progress_manager.update_node_progress(30)
+            # Submit all tasks
+            future_to_index = {
+                executor.submit(generate_chapter, i): i
+                for i in range(len(ordered_chapters))
+            }
 
-            # Only submit tasks if we have chapters to process
-            if ordered_chapters:
-                # Submit all tasks
-                future_to_index = {
-                    executor.submit(generate_chapter, i): i
-                    for i in range(len(ordered_chapters))
-                }
-
-                # Process results as they complete
-                for future in future_to_index:
-                    chapter = future.result()
-                    chapters.append(chapter)
-                    if chapters_pbar:
-                        chapters_pbar.update(1)
+            # Process results as they complete
+            for future in future_to_index:
+                chapter = future.result()
+                chapters.append(chapter)
+                if chapters_pbar:
+                    chapters_pbar.update(1)
 
             # Close the progress bar if we created it
-            if progress_manager:
-                progress_manager.close_task_pbar("Chapters")
-            elif chapters_pbar:
-                chapters_pbar.close()
+            if chapters_pbar:
+                if progress_manager:
+                    progress_manager.close_task_pbar("Chapters")
+                else:
+                    chapters_pbar.close()
 
         # Sort chapters by number
         chapters.sort(key=lambda x: x["number"])
