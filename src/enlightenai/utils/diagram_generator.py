@@ -4,15 +4,17 @@ EnlightenAI - Diagram Generator
 This module provides functions for generating Mermaid diagrams from code.
 """
 
+import os
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Any
 
 
-def extract_classes(files: Dict[str, str]) -> Dict[str, Dict]:
+def extract_classes(repo_dir: str, file_paths: List[str]) -> Dict[str, Dict]:
     """Extract class definitions from Python files.
 
     Args:
-        files (dict): Dictionary mapping file paths to file contents
+        repo_dir (str): The local path to the cloned repository.
+        file_paths (list): List of relative file paths to analyze.
 
     Returns:
         dict: Dictionary mapping class names to class information
@@ -23,8 +25,16 @@ def extract_classes(files: Dict[str, str]) -> Dict[str, Dict]:
     class_pattern = r"class\s+(\w+)(?:\(([^)]*)\))?\s*:"
     method_pattern = r"def\s+(\w+)\s*\(self(?:,\s*[^)]*)?(?:\)\s*->.*?:|\):)"
 
-    for file_path, content in files.items():
-        if not file_path.endswith(".py"):
+    for rel_path in file_paths:
+        if not rel_path.endswith(".py"):
+            continue
+
+        full_path = os.path.join(repo_dir, rel_path)
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+        except Exception:
+            # Ignore files that cannot be read
             continue
 
         # Find all class definitions in the file
@@ -53,7 +63,7 @@ def extract_classes(files: Dict[str, str]) -> Dict[str, Dict]:
 
             # Store class information
             classes[class_name] = {
-                "file": file_path,
+                "file": rel_path, # Store relative path
                 "parents": parents,
                 "methods": methods,
             }
@@ -89,11 +99,12 @@ def generate_class_diagram(classes: Dict[str, Dict]) -> str:
     return "\n".join(diagram)
 
 
-def extract_components(files: Dict[str, str]) -> Dict[str, Dict]:
+def extract_components(repo_dir: str, file_paths: List[str]) -> Dict[str, Dict]:
     """Extract component definitions from Python files.
 
     Args:
-        files (dict): Dictionary mapping file paths to file contents
+        repo_dir (str): The local path to the cloned repository.
+        file_paths (list): List of relative file paths to analyze.
 
     Returns:
         dict: Dictionary mapping component names to component information
@@ -104,12 +115,20 @@ def extract_components(files: Dict[str, str]) -> Dict[str, Dict]:
     # Regular expression for import statements
     import_pattern = r"from\s+([\w.]+)\s+import\s+([^#\n]+)"
 
-    for file_path, content in files.items():
-        if not file_path.endswith(".py"):
+    for rel_path in file_paths:
+        if not rel_path.endswith(".py"):
+            continue
+
+        full_path = os.path.join(repo_dir, rel_path)
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+        except Exception:
+            # Ignore files that cannot be read
             continue
 
         # Extract the module name from the file path
-        module_name = file_path.replace("/", ".").replace("\\", ".").replace(".py", "")
+        module_name = rel_path.replace(os.sep, ".").replace(".py", "")
         if module_name.startswith("."):
             module_name = module_name[1:]
 
@@ -122,7 +141,7 @@ def extract_components(files: Dict[str, str]) -> Dict[str, Dict]:
             file_imports.extend([(module, item) for item in imported_items])
 
         # Store component information
-        components[module_name] = {"file": file_path, "imports": file_imports}
+        components[module_name] = {"file": rel_path, "imports": file_imports}
 
         # Store imports for dependency resolution
         imports[module_name] = file_imports
@@ -166,17 +185,36 @@ def generate_component_diagram(components: Dict[str, Dict]) -> str:
     return "\n".join(diagram)
 
 
-def generate_diagrams(files: Dict[str, str]) -> Dict[str, str]:
+def generate_diagrams(repo_dir: str, abstractions: List[Dict[str, Any]], verbose: bool = False) -> Dict[str, str]:
     """Generate Mermaid diagrams from code.
 
     Args:
-        files (dict): Dictionary mapping file paths to file contents
+        repo_dir (str): Local path to the cloned repository.
+        abstractions (list): List of identified abstractions, used to find relevant files.
+        verbose (bool): Whether to print verbose output.
 
     Returns:
         dict: Dictionary mapping diagram types to diagram content
     """
-    classes = extract_classes(files)
-    components = extract_components(files)
+    # Extract all unique Python file paths from abstractions
+    python_files = set()
+    for abstraction in abstractions:
+        for file_path in abstraction.get("files", []):
+            if file_path.endswith(".py"):
+                python_files.add(file_path)
+
+    if verbose:
+        print(f"Generating diagrams based on {len(python_files)} Python files.")
+
+    if not python_files:
+        return {
+            "class_diagram": "```mermaid\nclassDiagram\n    %% No Python classes found\n```",
+            "component_diagram": "```mermaid\nflowchart TD\n    %% No Python components found\n```",
+        }
+
+    python_file_list = list(python_files)
+    classes = extract_classes(repo_dir, python_file_list)
+    components = extract_components(repo_dir, python_file_list)
 
     diagrams = {
         "class_diagram": generate_class_diagram(classes),

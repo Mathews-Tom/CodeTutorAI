@@ -8,6 +8,8 @@ with enhanced features like retries, error handling, and token management.
 import json
 import logging
 import os
+import hashlib
+import diskcache
 import time
 from typing import Optional
 
@@ -65,6 +67,8 @@ class LLMClient:
         max_retries: int = 3,
         timeout: int = 60,
         verbose: bool = False,
+        cache_enabled: bool = False,
+        cache_dir: str = ".llm_cache",
     ):
         """Initialize the LLM client.
 
@@ -75,6 +79,8 @@ class LLMClient:
             max_retries (int): Maximum number of retries for failed requests
             timeout (int): Timeout for requests in seconds
             verbose (bool): Whether to print verbose output
+            cache_enabled (bool): Whether to enable caching for LLM calls
+            cache_dir (str): Directory to store the cache
         """
         self.provider = provider.lower()
         self.api_key = api_key or self._get_api_key(provider)
@@ -82,6 +88,12 @@ class LLMClient:
         self.max_retries = max_retries
         self.timeout = timeout
         self.verbose = verbose
+        self.cache_enabled = cache_enabled
+        self.cache = None
+        if self.cache_enabled:
+            os.makedirs(cache_dir, exist_ok=True)
+            self.cache = diskcache.Cache(cache_dir)
+            logger.info(f"LLM caching enabled. Cache directory: {cache_dir}")
 
         # Initialize token counter
         self.token_counter = TokenCounter(
@@ -311,6 +323,7 @@ class LLMClient:
         max_tokens: int = 1000,
         temperature: float = 0.7,
         system_message: Optional[str] = None,
+        # Note: Caching is handled within this method if enabled
     ) -> str:
         """Call the LLM provider with the given prompt.
 
@@ -332,6 +345,29 @@ class LLMClient:
 
         if self.provider not in providers:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
+        cache_key = None
+        if self.cache_enabled and self.cache is not None:
+            # Create a stable cache key based on relevant parameters
+            key_data = {
+                "provider": self.provider,
+                "model": self.model,
+                "prompt": prompt,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "system_message": system_message,
+            }
+            # Use json.dumps for stable serialization and hashlib for hashing
+            key_string = json.dumps(key_data, sort_keys=True)
+            cache_key = hashlib.sha256(key_string.encode('utf-8')).hexdigest()
+
+            # Check cache
+            cached_result = self.cache.get(cache_key)
+            if cached_result is not None:
+                if self.verbose:
+                    logger.debug(f"Cache hit for key: {cache_key[:8]}...")
+                return cached_result
+            elif self.verbose:
+                logger.debug(f"Cache miss for key: {cache_key[:8]}...")
 
         # Check token count if using OpenAI
         if self.provider == "openai":
@@ -359,6 +395,11 @@ class LLMClient:
             elapsed_time = time.time() - start_time
 
             logger.debug(f"LLM call completed in {elapsed_time:.2f} seconds")
+            # Store in cache if enabled and successful
+            if self.cache_enabled and self.cache is not None and cache_key is not None:
+                self.cache.set(cache_key, response)
+                if self.verbose:
+                    logger.debug(f"Stored result in cache for key: {cache_key[:8]}...")
             return response
         except Exception as e:
             logger.error(f"Error calling {self.provider} LLM: {str(e)}")
@@ -373,6 +414,8 @@ def call_llm(
     max_tokens: int = 1000,
     temperature: float = 0.7,
     system_message: Optional[str] = None,
+    cache_enabled: bool = False,
+    cache_dir: str = ".llm_cache",
 ) -> str:
     """Call an LLM provider with the given prompt (compatibility function).
 
@@ -383,9 +426,16 @@ def call_llm(
         max_tokens (int): Maximum number of tokens to generate
         temperature (float): Sampling temperature
         system_message (str, optional): System message to prepend
+        cache_enabled (bool): Whether to enable caching
+        cache_dir (str): Directory for the cache
 
     Returns:
         str: The generated text
     """
-    client = LLMClient(provider=provider, api_key=api_key)
+    client = LLMClient(
+        provider=provider,
+        api_key=api_key,
+        cache_enabled=cache_enabled,
+        cache_dir=cache_dir
+    )
     return client.call(prompt, max_tokens, temperature, system_message)
