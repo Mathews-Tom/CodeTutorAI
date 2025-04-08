@@ -50,9 +50,21 @@ def create_html_viewer(
     with open(css_path, "w", encoding="utf-8") as f:
         f.write(_get_css())
 
-    # Create the JavaScript file with chapter contents
-    js_content = _get_js().replace(
-        "${chapter_contents_str}", json.dumps(chapter_contents_json)
+    # Create diagram contents dictionary
+    diagram_contents_json = {}
+    if diagrams:
+        for diagram_type, content in diagrams.items():
+            # Use the diagram type + .md as the key, matching data-diagram attribute
+            diagram_filename = f"{diagram_type}.md"
+            diagram_contents_json[diagram_filename] = content
+
+    # Create the JavaScript file with chapter and diagram contents
+    js_content = (
+        _get_js()
+        .replace("${chapter_contents_str}", json.dumps(chapter_contents_json))
+        .replace(  # Add replacement for diagram contents
+            "${diagram_contents_str}", json.dumps(diagram_contents_json)
+        )
     )
     js_path = os.path.join(assets_dir, "script.js")
     with open(js_path, "w", encoding="utf-8") as f:
@@ -98,24 +110,12 @@ def create_html_viewer(
                 # Update progress bar
                 pbar.update(1)
 
-    # Copy diagram files to the viewer directory if available
+    # Diagram files are now embedded in JS, no need to copy them individually.
+    # Ensure the diagrams directory exists in the viewer in case it's needed later.
     if diagrams:
-        diagrams_dir = os.path.join(output_dir, "diagrams")
         viewer_diagrams_dir = os.path.join(viewer_dir, "diagrams")
         os.makedirs(viewer_diagrams_dir, exist_ok=True)
-
-        # Copy diagram files with progress bar
-        with tqdm(
-            total=len(diagrams), desc="Copying diagram files", unit="file"
-        ) as pbar:
-            for diagram_type in diagrams:
-                src_path = os.path.join(diagrams_dir, f"{diagram_type}.md")
-                dst_path = os.path.join(viewer_diagrams_dir, f"{diagram_type}.md")
-                if os.path.exists(src_path):
-                    shutil.copy2(src_path, dst_path)
-
-                # Update progress bar
-                pbar.update(1)
+        # Note: The actual copying of .md files is removed.
 
     return html_path
 
@@ -427,6 +427,7 @@ def _get_js() -> str:
     return """
 // Store chapter contents
 const chapterContents = ${chapter_contents_str};
+const diagramContents = ${diagram_contents_str}; // Add diagram contents store
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Mermaid
@@ -463,8 +464,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Render markdown
                 chapterContent.innerHTML = marked.parse(chapterData);
 
-                // Render Mermaid diagrams
-                mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                // Render Mermaid diagrams within the loaded content
+                mermaid.init(undefined, chapterContent.querySelectorAll('.mermaid'));
             } else {
                 // Fallback to fetch if content is not embedded
                 fetch(`chapters/${chapterFile}`)
@@ -478,8 +479,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Render markdown
                         chapterContent.innerHTML = marked.parse(markdown);
 
-                        // Render Mermaid diagrams
-                        mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+                        // Render Mermaid diagrams within the loaded content
+                        mermaid.init(undefined, chapterContent.querySelectorAll('.mermaid'));
                     })
                     .catch(error => {
                         console.error('Error loading chapter:', error);
@@ -504,20 +505,30 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get diagram filename
             const diagramFile = this.getAttribute('data-diagram');
 
-            // Load diagram content
-            fetch(`diagrams/${diagramFile}`)
-                .then(response => response.text())
-                .then(markdown => {
-                    // Render markdown
-                    chapterContent.innerHTML = marked.parse(markdown);
+            // Get diagram content from embedded store
+            const mermaidCode = diagramContents[diagramFile];
 
-                    // Render Mermaid diagrams
-                    mermaid.init(undefined, document.querySelectorAll('.mermaid'));
-                })
-                .catch(error => {
-                    console.error('Error loading diagram:', error);
-                    chapterContent.innerHTML = '<h1>Error</h1><p>Failed to load diagram content.</p>';
-                });
+            if (mermaidCode) {
+                 // Get diagram type for title
+                 // Title case the diagram type using JavaScript
+                 const diagramTypeName = diagramFile.replace('.md', '').replace('_', ' ');
+                 const diagramType = diagramTypeName.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                 // Clean and insert the Mermaid code into a div Mermaid can process
+                 let cleanedMermaidCode = mermaidCode.trim();
+                 if (cleanedMermaidCode.startsWith('```mermaid')) {
+                     cleanedMermaidCode = cleanedMermaidCode.substring('```mermaid'.length);
+                 }
+                 if (cleanedMermaidCode.endsWith('```')) {
+                     cleanedMermaidCode = cleanedMermaidCode.substring(0, cleanedMermaidCode.length - '```'.length);
+                 }
+                 chapterContent.innerHTML = `<h1>${diagramType}</h1><div class="mermaid">${cleanedMermaidCode.trim()}</div>`;
+
+                 // Re-initialize Mermaid for the newly added diagram within the content area
+                 mermaid.init(undefined, chapterContent.querySelectorAll('.mermaid'));
+            } else {
+                 console.error('Error loading diagram:', diagramFile, 'Content not found in embedded store.');
+                 chapterContent.innerHTML = `<h1>Error</h1><p>Failed to load diagram content: ${diagramFile}</p><p>Content not found.</p>`;
+            }
         });
     });
 
