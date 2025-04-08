@@ -75,36 +75,45 @@ graph TD
 The system is primarily driven by a command-line interface and utilizes several utility modules.
 
 ```mermaid
-graph TB
-    subgraph User Interface
-        CLI["CLI (`cli.py`)"]
+graph TD
+    subgraph "User Interfaces"
+        UI_CLI["CLI (cli.py)"]
+        UI_ST["Streamlit UI (streamlit_app.py)"] -.-> App;
     end
 
-    subgraph Core Logic
-        Flow["Tutorial Flow (`flow.py`)"]
-        Nodes["Nodes (`nodes/`)"]
+    subgraph "EnlightenAI Core Logic (enlightenai/)"
+        Core_Flow["Tutorial Flow (flow.py)"]
+        Core_Nodes["Nodes (nodes/)"]
+        Core_Utils["Utilities (utils/)"]
     end
 
-    subgraph "Utilities (`utils/`)"
-        LLM["LLM Client (`llm_client.py`)"]
-        Fetcher["Repo Fetcher (`fetch_repo_gitin.py`)"]
-        Diagram["Diagram Generator (`diagram_generator.py`)"]
-        Formatting["Formatting Helpers (`formatting.py`)"]
-        HTML["HTML Viewer (`html_viewer.py`)"]
+    subgraph "External Services / Data"
+        Ext_Git["GitHub / Local Repo"]
+        Ext_Web["Website (Optional)"]
+        Ext_LLM["LLM API (OpenAI, Anthropic, etc.)"]
     end
 
-    CLI --> Flow;
-    Flow --> Nodes;
-    Nodes --> LLM;
-    Nodes --> Fetcher;
-    Nodes --> Diagram;
-    Nodes --> Formatting;
-    Flow --> HTML;
+    App(EnlightenAI Application) -- Runs --> Core_Flow;
+    UI_CLI -- Runs --> Core_Flow;
+
+
+    Core_Flow --> Core_Nodes;
+    Core_Nodes --> Core_Utils;
+    Core_Nodes --> Ext_LLM;
+
+    Core_Nodes -- Fetches --> Ext_Git;
+    Core_Nodes -- Fetches --> Ext_Web;
+
+    %% # e.g., llm_client
+    Core_Utils --> Ext_LLM;
+
+    style UI_ST fill:#FF4B4B,stroke:#333,stroke-width:2px
 ```
 
 ### Key Components (Reflecting Enhancements)
 
-- **Command Line Interface (`src/enlightenai/cli.py`)**: User entry point; parses arguments and starts the flow.
+- **Command Line Interface (`src/enlightenai/cli.py`)**: Original user entry point; parses arguments and starts the flow.
+- **Streamlit UI (`streamlit_app.py`)**: Web-based graphical user interface for easier interaction.
 - **Workflow Orchestration (`src/enlightenai/flow.py`)**: Defines the node sequence and manages data flow (primarily file paths and structured data, not full file contents).
 - **Nodes (`src/enlightenai/nodes/`)**: Modular units performing pipeline tasks. Optimized for parallel execution (where applicable), on-demand file reading, and leveraging caching. Utilize AST parsing for direct analysis where appropriate.
 - **LLM Client (`src/enlightenai/utils/llm_client.py`)**: Abstracts LLM interactions, incorporating **persistent caching** to reduce redundant API calls and latency.
@@ -114,48 +123,48 @@ graph TB
 ## 📁 Folder Structure
 
 ```plaintext
-/Users/druk/WorkSpace/AetherForge/EnlightenAI/
-├── .env.example             # Example environment variables (API keys, etc.)
-├── .gitignore               # Files/directories ignored by Git
-├── enhancement_plan.md      # Ideas for future improvements
-├── install_dev.sh           # Script for setting up development environment
-├── LICENSE                  # Project license file
-├── overview.md              # This file: High-level system overview
-├── pyproject.toml           # Project metadata and dependencies (PEP 621)
-├── README.md                # Main project README
-├── requirements.txt         # Python dependencies (alternative format)
-├── setup.py                 # Python package setup script (legacy)
-├── assets/                  # Static files (logos, banners, examples)
-├── docs/                    # General documentation (installation, usage, etc.)
-│   └── examples/            # Example generated tutorials
-├── mock_output/             # Directory for mock/test outputs
-├── src/                     # Source code directory
-│   └── enlightenai/         # Main package directory
+EnlightenAI/
+├── .env.example                        # Example environment variables (API keys, etc.)
+├── .gitignore                          # Files/directories ignored by Git
+├── enhancement_plan.md                 # Ideas for future improvements
+├── install_dev.sh                      # Script for setting up development environment
+├── LICENSE                             # Project license file
+├── overview.md                         # This file: High-level system overview
+├── pyproject.toml                      # Project metadata and dependencies (PEP 621)
+├── README.md                           # Main project README
+├── requirements.txt                    # Python dependencies (alternative format)
+├── setup.py                            # Python package setup script (legacy)
+├── assets/                             # Static files (logos, banners, examples)
+├── docs/                               # General documentation (installation, usage, etc.)
+│   └── examples/                       # Example generated tutorials
+├── mock_output/                        # Directory for mock/test outputs
+├── src/                                # Source code directory
+│   └── enlightenai/                    # Main package directory
 │       ├── __init__.py
-│       ├── cli.py             # Command Line Interface entry point
-│       ├── flow.py            # Defines the main tutorial generation workflow
-│       ├── test_enlightenai.py # Integration/system tests
-│       ├── test_mock.py       # Tests using mock data
-│       ├── nodes/             # Directory for workflow nodes
+│       ├── cli.py                      # Command Line Interface entry point
+│       ├── flow.py                     # Defines the main tutorial generation workflow
+│       ├── test_enlightenai.py         # Integration/system tests
+│       ├── test_mock.py                # Tests using mock data
+│       ├── nodes/                      # Directory for workflow nodes
 │       │   ├── __init__.py
 │       │   ├── analyze_relationships.py
 │       │   ├── combine_tutorial.py
-│       │   ├── fetch_repo_gitin.py # Fetches from Git/local
-│       │   ├── fetch_web.py      # (Potentially) Fetches web content
+│       │   ├── fetch_repo_gitin.py     # Fetches from Git/local
+│       │   ├── fetch_web.py            # (Potentially) Fetches web content
 │       │   ├── identify_abstractions.py
-│       │   ├── node.py           # Base class for nodes
+│       │   ├── node.py                 # Base class for nodes
 │       │   ├── order_chapters.py
 │       │   └── write_chapters.py
-│       └── utils/             # Utility functions and classes
+│       └── utils/                      # Utility functions and classes
 │           ├── __init__.py
-│           ├── call_llm.py       # (Older?) LLM call utility
-│           ├── diagram_generator.py # Generates Mermaid diagrams
-│           ├── formatting.py     # Text formatting helpers
-│           ├── html_viewer.py    # Opens generated HTML/MD in browser
-│           ├── llm_client.py     # Main client for LLM interactions
-│           └── mock_data.py      # Utilities for mock data generation
-├── enlightenai.egg-info/    # Build metadata (generated)
-└── test_output/             # Directory for actual test outputs
+│           ├── call_llm.py             # (Older?) LLM call utility
+│           ├── diagram_generator.py    # Generates Mermaid diagrams
+│           ├── formatting.py           # Text formatting helpers
+│           ├── html_viewer.py          # Opens generated HTML/MD in browser
+│           ├── llm_client.py           # Main client for LLM interactions
+│           └── mock_data.py            # Utilities for mock data generation
+├── enlightenai.egg-info/               # Build metadata (generated)
+└── test_output/                        # Directory for actual test outputs
 ```
 
 ## 🔮 Future Enhancements
@@ -170,3 +179,4 @@ With performance and efficiency optimizations now implemented, future efforts ca
 - **Incremental Updates:** Investigating ways to update tutorials based only on changed files (leveraging Git history and caching).
 
 EnlightenAI aims to be the go-to tool for demystifying codebases, making software development more accessible and collaborative.
+
