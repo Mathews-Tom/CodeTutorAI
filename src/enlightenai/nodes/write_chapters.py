@@ -13,7 +13,7 @@ from typing import Any, Dict, List
 from tqdm import tqdm
 
 from enlightenai.nodes.node import Node
-from enlightenai.utils.call_llm import call_llm
+from enlightenai.utils.llm_client import LLMClient # Import the client class
 from enlightenai.utils.diagram_generator import generate_diagrams
 
 
@@ -28,7 +28,8 @@ class WriteChaptersNode(Node):
                 - abstractions: List of abstractions
                 - relationships: Dictionary of relationships between abstractions
                 - ordered_chapters: List of ordered chapter titles
-                - files: Dictionary of file contents
+                - file_paths: List of relative file paths in the repository (optional, used for diagrams)
+                - repo_dir: Local path to the cloned repository
                 - output_dir: Output directory for the tutorial
                 - batch_size: Number of chapters to generate in parallel
                 - llm_provider: LLM provider to use
@@ -37,6 +38,8 @@ class WriteChaptersNode(Node):
                 - depth: Depth of the tutorial (basic, intermediate, advanced)
                 - language: Language for the tutorial
                 - generate_diagrams: Whether to generate diagrams
+                - cache_enabled: Whether to enable LLM caching
+                - cache_dir: Directory for the LLM cache
 
         Returns:
             None: The context is updated directly with the generated chapters.
@@ -49,12 +52,18 @@ class WriteChaptersNode(Node):
         depth = context.get("depth", "intermediate")
         language = context.get("language", "en")
         generate_diagrams = context.get("generate_diagrams", False)
+        cache_enabled = context.get("cache_enabled", False)
+        cache_dir = context.get("cache_dir", ".llm_cache")
+        repo_dir = context.get("repo_dir") # Needed for reading files
 
         # Get the ordered chapters
         ordered_chapters = context.get("ordered_chapters", [])
         abstractions = context.get("abstractions", [])
         relationships = context.get("relationships", {})
-        files = context.get("files", {})
+        # files = context.get("files", {}) # No longer used directly
+
+        if not repo_dir:
+            raise ValueError("repo_dir is required in the context to read files.")
 
         # Create the chapters directory
         chapters_dir = os.path.join(output_dir, "chapters")
@@ -67,7 +76,7 @@ class WriteChaptersNode(Node):
 
             # Update the context with an empty chapters list
             context["chapters"] = []
-            return None
+            return None # Exit early if no chapters
 
         if verbose:
             print(f"Generating {len(ordered_chapters)} chapters...")
@@ -80,7 +89,8 @@ class WriteChaptersNode(Node):
         if generate_diagrams:
             if verbose:
                 print("Generating diagrams...")
-            diagrams = generate_diagrams(files)
+            # Assuming generate_diagrams is updated to handle repo_dir and abstractions/file_paths
+            diagrams = generate_diagrams(repo_dir, abstractions, verbose=verbose)
 
             # Save diagrams to files
             diagrams_dir = os.path.join(output_dir, "diagrams")
@@ -93,19 +103,23 @@ class WriteChaptersNode(Node):
 
             if verbose:
                 print(f"Saved diagrams to {diagrams_dir}")
+        # Instantiate the LLM client with caching settings
+        llm_client = LLMClient(
+            provider=llm_provider,
+            api_key=api_key,
+            cache_enabled=cache_enabled,
+            cache_dir=cache_dir,
+            verbose=verbose # Pass verbose setting to client for cache logging
+        )
 
         # Generate chapters in parallel
         chapters = []
 
         def generate_chapter(chapter_index):
-            """Generate a single chapter.
+            """Generate a single chapter (defined inside process)."""
+            # Note: This function uses variables from the outer scope (process method)
+            # like llm_client, abstractions, relationships, repo_dir, etc.
 
-            Args:
-                chapter_index (int): Index of the chapter in the ordered_chapters list
-
-            Returns:
-                dict: The generated chapter
-            """
             chapter_title = ordered_chapters[chapter_index]
             chapter_number = chapter_index + 1
 
@@ -135,10 +149,11 @@ class WriteChaptersNode(Node):
             related_abstractions = relationships.get(abstraction_name, [])
 
             # Create the prompt for the LLM
+            # Note: _create_chapter_prompt is a method of the class, so use self.
             prompt = self._create_chapter_prompt(
                 abstraction,
                 related_abstractions,
-                files,
+                repo_dir, # Pass repo_dir
                 chapter_number,
                 depth,
                 language,
@@ -146,15 +161,15 @@ class WriteChaptersNode(Node):
             )
 
             # Call the LLM
-            chapter_content = call_llm(
+            chapter_content = llm_client.call( # Use the client instance from outer scope
                 prompt,
-                provider=llm_provider,
-                api_key=api_key,
+                # provider and api_key are handled by the client instance
                 max_tokens=4000,
                 temperature=0.7,
             )
 
             # Format the chapter content
+            # Note: _format_chapter_content is a method of the class, so use self.
             chapter_content = self._format_chapter_content(
                 chapter_content, chapter_number, chapter_title
             )
@@ -210,13 +225,14 @@ class WriteChaptersNode(Node):
         if verbose:
             print(f"Generated {len(chapters)} chapters")
 
+        # No return value needed as context is updated directly
         return None
 
     def _create_chapter_prompt(
         self,
         abstraction: Dict[str, Any],
         related_abstractions: List[str],
-        files: Dict[str, str],
+        repo_dir: str, # Changed from files dict
         chapter_number: int,
         depth: str,
         language: str,
@@ -227,7 +243,7 @@ class WriteChaptersNode(Node):
         Args:
             abstraction (dict): The abstraction to generate a chapter for
             related_abstractions (list): List of related abstraction names
-            files (dict): Dictionary of file contents
+            repo_dir (str): Local path to the cloned repository
             chapter_number (int): The chapter number
             depth (str): The depth of the tutorial (basic, intermediate, advanced)
             language (str): The language for the tutorial
@@ -292,12 +308,22 @@ Here are the contents of the relevant files:
 """
 
         for file_path in abstraction_files:
-            if file_path in files:
-                file_content = files[file_path]
-                prompt += f"""
+            full_path = os.path.join(repo_dir, file_path)
+            file_content = f"Content for {file_path} could not be read." # Default message
+            try:
+                if os.path.exists(full_path):
+                    with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                        # Read content and truncate
+                        file_content = f.read()[:2000]
+                else:
+                    file_content = f"File {file_path} not found."
+            except Exception as e:
+                file_content = f"Error reading {file_path}: {e}"
+
+            prompt += f"""
 ## {file_path}
 ```
-{file_content[:2000]}  # Limit to 2000 characters to avoid token limits
+{file_content}
 ```
 """
 

@@ -13,7 +13,7 @@ from typing import Dict, List, Any, Set, Tuple
 from tqdm import tqdm
 
 from enlightenai.nodes.node import Node
-from enlightenai.utils.call_llm import call_llm
+from enlightenai.utils.llm_client import LLMClient # Import the client class
 
 
 class IdentifyAbstractionsNode(Node):
@@ -24,7 +24,8 @@ class IdentifyAbstractionsNode(Node):
         
         Args:
             context (dict): The shared context dictionary containing:
-                - files: Dictionary of file contents
+                - file_paths: List of relative file paths in the repository
+                - repo_dir: Local path to the cloned repository
                 - repo_name: Name of the repository
                 - repo_metadata: Repository metadata
                 - web_content: Web content related to the repository
@@ -32,49 +33,61 @@ class IdentifyAbstractionsNode(Node):
                 - llm_provider: LLM provider to use
                 - api_key: API key for the LLM provider
                 - verbose: Whether to print verbose output
-                
+                - cache_enabled: Whether to enable LLM caching
+                - cache_dir: Directory for the LLM cache
+
         Returns:
             dict: Dictionary containing the identified abstractions.
         """
         verbose = context.get("verbose", False)
-        files = context.get("files", {})
+        file_paths = context.get("file_paths", [])
         repo_name = context.get("repo_name", "")
+        # repo_dir is needed if we decide to read file content here later
         repo_metadata = context.get("repo_metadata", {})
         web_content = context.get("web_content", {})
         output_dir = context.get("output_dir", "tutorial_output")
         llm_provider = context.get("llm_provider", "openai")
         api_key = context.get("api_key")
-        
+        cache_enabled = context.get("cache_enabled", False)
+        cache_dir = context.get("cache_dir", ".llm_cache")
+
         if verbose:
-            print(f"Identifying abstractions in {len(files)} files...")
+            print(f"Identifying abstractions in {len(file_paths)} files...")
         
         # Group files by directory
-        file_groups = self._group_files_by_directory(files)
+        file_groups = self._group_files_by_directory(file_paths)
         
         if verbose:
             print(f"Grouped files into {len(file_groups)} directories")
-        
+        # Instantiate the LLM client with caching settings
+        llm_client = LLMClient(
+            provider=llm_provider,
+            api_key=api_key,
+            cache_enabled=cache_enabled,
+            cache_dir=cache_dir,
+            verbose=verbose # Pass verbose setting to client for cache logging
+        )
         # Identify abstractions in each file group
         abstractions = []
+
         
-        for group_name, group_files in file_groups.items():
+        for group_name, group_file_paths in file_groups.items():
             if verbose:
                 print(f"Identifying abstractions in {group_name}...")
             
             # Create a prompt for the LLM
-            prompt = self._create_abstraction_prompt(group_name, group_files, repo_name, repo_metadata, web_content)
+            prompt = self._create_abstraction_prompt(group_name, group_file_paths, repo_name, repo_metadata, web_content)
             
-            # Call the LLM
-            response = call_llm(
-                prompt, 
-                provider=llm_provider, 
-                api_key=api_key,
+            # Call the LLM using the client instance
+            response = llm_client.call(
+                prompt,
+                # provider and api_key are handled by the client instance
                 max_tokens=2000,
                 temperature=0.7
             )
             
             # Parse the response
-            group_abstractions = self._parse_abstraction_response(response, group_files)
+            group_abstractions = self._parse_abstraction_response(response, group_file_paths)
             
             # Add the abstractions to the list
             abstractions.extend(group_abstractions)
@@ -99,20 +112,20 @@ class IdentifyAbstractionsNode(Node):
         # Update the context
         return {"abstractions": abstractions}
     
-    def _group_files_by_directory(self, files: Dict[str, str]) -> Dict[str, Dict[str, str]]:
+    def _group_files_by_directory(self, file_paths: List[str]) -> Dict[str, List[str]]:
         """Group files by directory.
-        
+
         Args:
-            files (dict): Dictionary mapping file paths to file contents
-            
+            file_paths (list): List of relative file paths
+
         Returns:
-            dict: Dictionary mapping directory names to dictionaries of files
+            dict: Dictionary mapping directory names to lists of file paths
         """
         file_groups = {}
         
-        for file_path, content in files.items():
+        for file_path in file_paths:
             # Get the directory path
-            dir_path = os.path.dirname(file_path)
+            dir_path = os.path.dirname(file_path) or "" # Handle root files
             
             # Use the directory name as the group name
             if dir_path:
@@ -122,34 +135,34 @@ class IdentifyAbstractionsNode(Node):
             
             # Add the file to the group
             if group_name not in file_groups:
-                file_groups[group_name] = {}
-            
-            file_groups[group_name][file_path] = content
+                file_groups[group_name] = []
+
+            file_groups[group_name].append(file_path)
         
         return file_groups
     
     def _create_abstraction_prompt(
         self, 
-        group_name: str, 
-        group_files: Dict[str, str], 
-        repo_name: str, 
-        repo_metadata: Dict[str, Any], 
+        group_name: str,
+        group_file_paths: List[str],
+        repo_name: str,
+        repo_metadata: Dict[str, Any],
         web_content: Dict[str, Dict[str, str]]
     ) -> str:
         """Create a prompt for the LLM to identify abstractions.
-        
+
         Args:
             group_name (str): Name of the file group
-            group_files (dict): Dictionary mapping file paths to file contents
+            group_file_paths (list): List of file paths in this group
             repo_name (str): Name of the repository
             repo_metadata (dict): Repository metadata
             web_content (dict): Web content related to the repository
-            
+
         Returns:
             str: The prompt for the LLM
         """
         # Create a summary of the files
-        file_summary = "\n".join([f"- {file_path}" for file_path in group_files.keys()])
+        file_summary = "\n".join([f"- {file_path}" for file_path in group_file_paths])
         
         # Create a summary of the web content
         web_summary = ""
@@ -206,13 +219,13 @@ Focus on identifying meaningful abstractions that would be helpful for understan
         
         return prompt
     
-    def _parse_abstraction_response(self, response: str, group_files: Dict[str, str]) -> List[Dict[str, Any]]:
+    def _parse_abstraction_response(self, response: str, group_file_paths: List[str]) -> List[Dict[str, Any]]:
         """Parse the LLM response to extract abstractions.
-        
+
         Args:
             response (str): The LLM response
-            group_files (dict): Dictionary mapping file paths to file contents
-            
+            group_file_paths (list): List of file paths in this group
+
         Returns:
             list: List of abstraction dictionaries
         """
@@ -235,7 +248,7 @@ Focus on identifying meaningful abstractions that would be helpful for understan
                             abstraction["files"] = []
                         
                         # Filter out files that don't exist in the group
-                        abstraction["files"] = [file_path for file_path in abstraction["files"] if file_path in group_files]
+                        abstraction["files"] = [file_path for file_path in abstraction["files"] if file_path in group_file_paths]
                         
                         valid_abstractions.append(abstraction)
                 
@@ -264,7 +277,7 @@ Focus on identifying meaningful abstractions that would be helpful for understan
             files = [file.strip() for file in files_str.split(",")]
             
             # Filter out files that don't exist in the group
-            files = [file_path for file_path in files if file_path in group_files]
+            files = [file_path for file_path in files if file_path in group_file_paths]
             
             # Add the abstraction
             abstractions.append({
