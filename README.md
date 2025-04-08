@@ -37,6 +37,7 @@ EnlightenAI acts as a digital oracle for codebases — using AI to reveal the de
 - 📊 Generates Mermaid diagrams for visual understanding
 - 🎯 Adjustable depth levels for different expertise levels
 - 🖥️ Interactive HTML viewer for better reading experience
+- ✨ **NEW:** Streamlit UI for easy graphical interaction
 
 ---
 
@@ -46,13 +47,38 @@ EnlightenAI operates as a modular AI workflow that progresses through the follow
 
 ```mermaid
 graph TD
-    A[Start] --> B[FetchRepo]
-    B --> C[IdentifyAbstractions]
-    C --> D[AnalyzeRelationships]
-    D --> E[OrderChapters]
-    E --> F[WriteChapters]
-    F --> G[CombineTutorial]
-    G --> H[Generate Markdown Docs]
+    subgraph "User Interfaces"
+        UI_CLI["CLI (cli.py)"]
+        UI_ST["Streamlit UI (streamlit_app.py)"] -.-> App;
+    end
+
+    subgraph "EnlightenAI Core Logic (enlightenai/)"
+        Core_Flow["Tutorial Flow (flow.py)"]
+        Core_Nodes["Nodes (nodes/)"]
+        Core_Utils["Utilities (utils/)"]
+    end
+
+    subgraph "External Services / Data"
+        Ext_Git["GitHub / Local Repo"]
+        Ext_Web["Website (Optional)"]
+        Ext_LLM["LLM API (OpenAI, Anthropic, etc.)"]
+    end
+
+    App(EnlightenAI Application) -- Runs --> Core_Flow;
+    UI_CLI -- Runs --> Core_Flow;
+
+
+    Core_Flow --> Core_Nodes;
+    Core_Nodes --> Core_Utils;
+    Core_Nodes --> Ext_LLM;
+
+    Core_Nodes -- Fetches --> Ext_Git;
+    Core_Nodes -- Fetches --> Ext_Web;
+
+    %% # e.g., llm_client
+    Core_Utils --> Ext_LLM;
+
+    style UI_ST fill:#FF4B4B,stroke:#333,stroke-width:2px
 ```
 
 Each node is powered by prompts to a large language model (LLM), enabling intelligent interpretation of even complex, multi-language codebases.
@@ -155,6 +181,24 @@ python3 -m enlightenai.cli https://github.com/SomeUser/SomeProject --output-dir 
   --diagrams                          # Generate Mermaid diagrams for classes and components
   --open-viewer                       # Open the HTML viewer in the default web browser
 ```
+```
+
+#### Using the Streamlit UI (NEW!)
+
+For a graphical interface:
+
+```bash
+# Ensure your virtual environment is activated
+# source .venv/bin/activate (or similar)
+
+# Run the Streamlit app
+streamlit run streamlit_app.py
+
+# Or using the venv python explicitly
+.venv/bin/python -m streamlit run streamlit_app.py
+```
+
+This will open a web interface in your browser where you can input the repository URL and configure options visually.
 
 ### 5. Interactive HTML Viewer
 
@@ -249,38 +293,38 @@ python -m enlightenai.test_mock --output-formats markdown,html --batch-size 2 --
 
 ```plaintext
 EnlightenAI/
-├── src/                  # Source code directory
-│   └── enlightenai/      # Main package
-│       ├── __init__.py    # Package initialization
-│       ├── cli.py         # CLI entry point
-│       ├── flow.py        # Defines the AI workflow
-│       ├── test_enlightenai.py # Test script for real data
-│       ├── test_mock.py    # Test script for mock data
-│       ├── nodes/         # Node implementations for each step
-│       │   ├── __init__.py # Node package initialization
-│       │   ├── node.py     # Base Node class
-│       │   ├── fetch_repo_gitin.py # GitHub repository fetching
-│       │   ├── fetch_web.py # Web content fetching
-│       │   ├── identify_abstractions.py # Abstraction identification
-│       │   ├── analyze_relationships.py # Relationship analysis
-│       │   ├── order_chapters.py # Chapter ordering
-│       │   ├── write_chapters.py # Chapter writing
-│       │   └── combine_tutorial.py # Tutorial combination
-│       └── utils/         # Utility scripts
-│           ├── __init__.py # Utils package initialization
-│           ├── call_llm.py # LLM client compatibility layer
-│           ├── llm_client.py # Enhanced LLM client
-│           ├── formatting.py # Formatting utilities
-│           └── mock_data.py # Mock data for testing
-├── docs/                  # Output tutorials
-├── assets/                # Project assets
-├── setup.py               # Package setup script
-├── requirements.txt       # Python dependencies
-├── install_dev.sh         # Development installation script
-├── .env.example           # Example environment variables
-├── implementation_plan.md # Implementation plan
-├── LICENSE                # MIT License
-└── README.md              # You're here!
+├── src/                                  # Source code directory
+│   └── enlightenai/                      # Main package
+│       ├── __init__.py                   # Package initialization
+│       ├── cli.py                        # CLI entry point
+│       ├── flow.py                       # Defines the AI workflow
+│       ├── test_enlightenai.py           # Test script for real data
+│       ├── test_mock.py                  # Test script for mock data
+│       ├── nodes/                        # Node implementations for each step
+│       │   ├── __init__.py               # Node package initialization
+│       │   ├── node.py                   # Base Node class
+│       │   ├── fetch_repo_gitin.py       # GitHub repository fetching
+│       │   ├── fetch_web.py              # Web content fetching
+│       │   ├── identify_abstractions.py  # Abstraction identification
+│       │   ├── analyze_relationships.py  # Relationship analysis
+│       │   ├── order_chapters.py         # Chapter ordering
+│       │   ├── write_chapters.py         # Chapter writing
+│       │   └── combine_tutorial.py       # Tutorial combination
+│       └── utils/                        # Utility scripts
+│           ├── __init__.py               # Utils package initialization
+│           ├── call_llm.py               # LLM client compatibility layer
+│           ├── llm_client.py             # Enhanced LLM client
+│           ├── formatting.py             # Formatting utilities
+│           └── mock_data.py              # Mock data for testing
+├── docs/                                 # Output tutorials
+├── assets/                               # Project assets
+├── setup.py                              # Package setup script
+├── requirements.txt                      # Python dependencies
+├── install_dev.sh                        # Development installation script
+├── .env.example                          # Example environment variables
+├── implementation_plan.md                # Implementation plan
+├── LICENSE                               # MIT License
+└── README.md                             # You're here!
 ```
 
 ---
