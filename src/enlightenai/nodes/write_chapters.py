@@ -13,8 +13,8 @@ from typing import Any, Dict, List
 from tqdm import tqdm
 
 from enlightenai.nodes.node import Node
-from enlightenai.utils.llm_client import LLMClient # Import the client class
 from enlightenai.utils.diagram_generator import generate_diagrams
+from enlightenai.utils.llm_client import LLMClient  # Import the client class
 
 
 class WriteChaptersNode(Node):
@@ -51,10 +51,12 @@ class WriteChaptersNode(Node):
         api_key = context.get("api_key")
         depth = context.get("depth", "intermediate")
         language = context.get("language", "en")
-        generate_diagrams = context.get("generate_diagrams", False)
+        should_generate_diagrams = context.get(
+            "generate_diagrams", False
+        )  # Renamed to avoid shadowing imported function
         cache_enabled = context.get("cache_enabled", False)
         cache_dir = context.get("cache_dir", ".llm_cache")
-        repo_dir = context.get("repo_dir") # Needed for reading files
+        repo_dir = context.get("repo_dir")  # Needed for reading files
 
         # Get the ordered chapters
         ordered_chapters = context.get("ordered_chapters", [])
@@ -76,21 +78,23 @@ class WriteChaptersNode(Node):
 
             # Update the context with an empty chapters list
             context["chapters"] = []
-            return None # Exit early if no chapters
+            return None  # Exit early if no chapters
 
         if verbose:
             print(f"Generating {len(ordered_chapters)} chapters...")
             print(f"Tutorial depth: {depth}")
             print(f"Tutorial language: {language}")
-            print(f"Generate diagrams: {generate_diagrams}")
+            print(f"Generate diagrams: {should_generate_diagrams}")
 
         # Generate diagrams if requested
         diagrams = {}
-        if generate_diagrams:
+        if should_generate_diagrams:
             if verbose:
                 print("Generating diagrams...")
-            # Assuming generate_diagrams is updated to handle repo_dir and abstractions/file_paths
-            diagrams = generate_diagrams(repo_dir, abstractions, verbose=verbose)
+            # Call the imported function, not the boolean flag
+            diagrams = generate_diagrams(
+                repo_dir, abstractions, verbose=verbose
+            )  # Use the imported function
 
             # Save diagrams to files
             diagrams_dir = os.path.join(output_dir, "diagrams")
@@ -109,7 +113,7 @@ class WriteChaptersNode(Node):
             api_key=api_key,
             cache_enabled=cache_enabled,
             cache_dir=cache_dir,
-            verbose=verbose # Pass verbose setting to client for cache logging
+            verbose=verbose,  # Pass verbose setting to client for cache logging
         )
 
         # Generate chapters in parallel
@@ -153,7 +157,7 @@ class WriteChaptersNode(Node):
             prompt = self._create_chapter_prompt(
                 abstraction,
                 related_abstractions,
-                repo_dir, # Pass repo_dir
+                repo_dir,  # Pass repo_dir
                 chapter_number,
                 depth,
                 language,
@@ -161,11 +165,13 @@ class WriteChaptersNode(Node):
             )
 
             # Call the LLM
-            chapter_content = llm_client.call( # Use the client instance from outer scope
-                prompt,
-                # provider and api_key are handled by the client instance
-                max_tokens=4000,
-                temperature=0.7,
+            chapter_content = (
+                llm_client.call(  # Use the client instance from outer scope
+                    prompt,
+                    # provider and api_key are handled by the client instance
+                    max_tokens=4000,
+                    temperature=0.7,
+                )
             )
 
             # Format the chapter content
@@ -232,7 +238,7 @@ class WriteChaptersNode(Node):
         self,
         abstraction: Dict[str, Any],
         related_abstractions: List[str],
-        repo_dir: str, # Changed from files dict
+        repo_dir: str,  # Changed from files dict
         chapter_number: int,
         depth: str,
         language: str,
@@ -309,7 +315,9 @@ Here are the contents of the relevant files:
 
         for file_path in abstraction_files:
             full_path = os.path.join(repo_dir, file_path)
-            file_content = f"Content for {file_path} could not be read." # Default message
+            file_content = (
+                f"Content for {file_path} could not be read."  # Default message
+            )
             try:
                 if os.path.exists(full_path):
                     with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
