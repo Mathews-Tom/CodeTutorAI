@@ -29,8 +29,8 @@ class FetchRepoGitinNode(Node):
                 - output_dir: Output directory for the tutorial
                 - verbose: Whether to print verbose output
 
-        Returns:
-            dict: Dictionary containing the repository contents.
+            dict: Dictionary containing repository metadata, the local path to the
+                cloned repo (`repo_dir`), and a list of relative file paths (`file_paths`).
         """
         verbose = context.get("verbose", False)
         repo_url = context.get("repo_url")
@@ -67,7 +67,7 @@ class FetchRepoGitinNode(Node):
             print("Repository cloned successfully")
 
         # Get the repository files
-        files = self._get_repo_files(
+        file_paths = self._get_repo_files(
             repo_dir,
             max_file_size,
             max_files,
@@ -77,7 +77,7 @@ class FetchRepoGitinNode(Node):
         )
 
         if verbose:
-            print(f"Found {len(files)} files in the repository")
+            print(f"Found {len(file_paths)} files matching criteria in the repository")
 
         # Get the repository metadata
         metadata = self._get_repo_metadata(repo_url, repo_dir, verbose)
@@ -86,7 +86,7 @@ class FetchRepoGitinNode(Node):
         return {
             "repo_name": repo_name,
             "repo_dir": repo_dir,
-            "files": files,
+            "file_paths": file_paths,
             "repo_metadata": metadata,
         }
 
@@ -138,8 +138,8 @@ class FetchRepoGitinNode(Node):
         include_patterns: Optional[List[str]],
         exclude_patterns: Optional[List[str]],
         verbose: bool,
-    ) -> Dict[str, str]:
-        """Get the repository files.
+    ) -> List[str]:
+        """Get the relative paths of repository files matching the criteria.
 
         Args:
             repo_dir (str): Path to the repository directory
@@ -150,9 +150,9 @@ class FetchRepoGitinNode(Node):
             verbose (bool): Whether to print verbose output
 
         Returns:
-            dict: Dictionary mapping file paths to file contents
+            list: List of relative file paths within the repository.
         """
-        files = {}
+        file_paths = []
         file_count = 0
 
         # Walk through the repository directory
@@ -195,23 +195,14 @@ class FetchRepoGitinNode(Node):
                         print(f"Error getting file size for {rel_path}: {str(e)}")
                     continue
 
-                # Read the file content
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
+                # Add the relative path to the list
+                file_paths.append(rel_path)
+                file_count += 1
 
-                    # Add the file to the dictionary
-                    files[rel_path] = content
-                    file_count += 1
+                if verbose and file_count % 10 == 0:
+                    print(f"Processed {file_count} files...")
 
-                    if verbose and file_count % 10 == 0:
-                        print(f"Processed {file_count} files...")
-                except Exception as e:
-                    if verbose:
-                        print(f"Error reading {rel_path}: {str(e)}")
-                    continue
-
-        return files
+        return file_paths
 
     def _matches_patterns(self, file_path: str, patterns: List[str]) -> bool:
         """Check if a file path matches any of the given patterns.

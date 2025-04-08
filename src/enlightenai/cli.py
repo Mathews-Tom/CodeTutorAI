@@ -138,6 +138,17 @@ def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
         action="store_true",
         help="Generate Mermaid diagrams for classes and components",
     )
+    # Caching options
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Enable caching for LLM API calls to reduce cost and latency",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        default=".llm_cache",
+        help="Directory to store the LLM cache (default: .llm_cache)",
+    )
 
     return parser.parse_args(args)
 
@@ -183,6 +194,9 @@ def main(args: Optional[List[str]] = None) -> int:
         "language": args.language,
         "generate_diagrams": args.diagrams,
         "open_viewer": args.open_viewer,
+        # Caching options
+        "cache_enabled": args.cache,
+        "cache_dir": args.cache_dir,
     }
 
     # Create the tutorial flow

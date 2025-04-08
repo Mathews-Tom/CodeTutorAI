@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.13.3",
     "crawl4ai>=0.5.0.post8",
+    "diskcache>=5.6.3", # Added for LLM caching
     "gitin>=0.1.0",
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
