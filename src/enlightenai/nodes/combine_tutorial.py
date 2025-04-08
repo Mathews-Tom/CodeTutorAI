@@ -69,6 +69,7 @@ class CombineTutorialNode(Node):
             # Generate HTML viewer
             if "viewer" in output_formats or "html_viewer" in output_formats:
                 self._generate_html_viewer(context, repo_name, chapters)
+            # Removed debug prints
         elif verbose:
             print("No chapters were generated, skipping additional output formats.")
 
@@ -413,6 +414,9 @@ github:
         html_path = create_html_viewer(
             output_dir, f"{repo_name} - Code Walkthrough", chapters, diagrams
         )
+
+        # Add the path to the context so other parts of the app can find it
+        context["viewer_html_path"] = html_path
 
         if verbose:
             print(f"Created HTML viewer: {html_path}")

@@ -51,8 +51,13 @@ class Flow:
         Returns:
             dict: The final context after all nodes have executed.
         """
+        # Check for progress callback
+        progress_callback = context.get("progress_callback")
+
         # Add a progress manager to the context
-        context["progress_manager"] = ProgressManager()
+        context["progress_manager"] = (
+            ProgressManager()
+        )  # Keep for potential internal node use / CLI
 
         # Create a progress bar for the overall workflow
         with tqdm(
@@ -62,10 +67,20 @@ class Flow:
             position=0,
             leave=True,
         ) as main_pbar:
+            total_nodes = len(self.nodes)
             for i, node in enumerate(self.nodes):
-                # Update the main progress bar description
                 node_name = node.__class__.__name__
-                main_pbar.set_description(f"[{i + 1}/{len(self.nodes)}] {node_name}")
+
+                # --- Progress Callback Start ---
+                if progress_callback:
+                    progress_value = i / total_nodes
+                    progress_callback(
+                        f"Starting: {node_name} ({i + 1}/{total_nodes})", progress_value
+                    )
+                # --- End Progress Callback ---
+
+                # Update the main progress bar description (for CLI)
+                main_pbar.set_description(f"[{i + 1}/{total_nodes}] {node_name}")
 
                 # Print node information if verbose
                 if context.get("verbose"):
@@ -95,29 +110,32 @@ class Flow:
                     node_pbar.refresh()
 
                 # Update the main progress bar
-                main_pbar.update(1)
+                main_pbar.update(1)  # Update CLI progress bar
 
-                # Get elapsed time from progress manager if available
-                if "progress_manager" in context:
-                    _, time_str = context["progress_manager"].get_elapsed_time(
-                        node_name
+                # --- Progress Callback End ---
+                if progress_callback:
+                    progress_value = (i + 1) / total_nodes
+                    progress_callback(
+                        f"Completed: {node_name} ({i + 1}/{total_nodes})",
+                        progress_value,
                     )
-                    print(
-                        f"\nCompleted {node_name} in {time_str} (total: {elapsed_time:.2f} seconds)"
-                    )
-                else:
-                    # Format elapsed time as HH:MM:SS
-                    hours, remainder = divmod(elapsed_time, 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    time_str = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+                # --- End Progress Callback ---
 
-                    # Print completion message
-                    print(
-                        f"\nCompleted {node_name} in {time_str} (total: {elapsed_time:.2f} seconds)"
-                    )
+                # --- Logging/Printing Elapsed Time (Keep for CLI/Debugging) ---
+                elapsed_time_sec, elapsed_time_str = context[
+                    "progress_manager"
+                ].get_elapsed_time(node_name)
+                # Use a more concise print statement, maybe conditional on verbose?
+                if context.get("verbose"):
+                    print(f"Node {node_name} finished in {elapsed_time_str}")
+                # --- End Logging ---
 
         # Remove the progress manager from the context
         del context["progress_manager"]
+
+        # Final callback update to ensure 100%
+        if progress_callback:
+            progress_callback("Flow completed.", 1.0)
 
         return context
 
