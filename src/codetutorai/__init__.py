@@ -1,5 +1,5 @@
 """
-EnlightenAI - An intelligent codebase explainer
+CodeTutorAI - An intelligent codebase explainer
 
 This package provides tools to analyze a GitHub repository and generate
 a comprehensive tutorial explaining its inner workings.

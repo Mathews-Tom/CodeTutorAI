@@ -1,6 +1,7 @@
 .DS_Store
 
 # Output directories
+.llm_cache/
 backup/
 mock_output/
 test_output/

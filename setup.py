@@ -7,14 +7,14 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = fh.read().splitlines()
 
 setup(
-    name="enlightenai",
-    version="0.1.0",
+    name="codetutorai", 
+    version="0.2.0", 
     author="Tom Mathews",
     author_email="tom.mathews@nyu.edu",
-    description="An intelligent codebase explainer",
+    description="An intelligent codebase explainer - Turn GitHub Repos into Interactive Tutorials",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Mathews-Tom/EnlightenAI",
+    url="https://github.com/Mathews-Tom/CodeTutorAI", 
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     classifiers=[
@@ -26,7 +26,7 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "enlightenai=enlightenai.cli:main",
+            "codetutorai=codetutorai.cli:main", 
         ],
     },
 )

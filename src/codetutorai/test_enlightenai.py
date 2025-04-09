@@ -1,7 +1,7 @@
 """
-EnlightenAI - Mock Test
+CodeTutorAI - Test Script
 
-This module provides a test script for EnlightenAI using mock data.
+This module provides a test script for CodeTutorAI using real data.
 """
 
 import argparse
@@ -11,8 +11,7 @@ from typing import Any, Dict
 
 from dotenv import load_dotenv
 
-from enlightenai.flow import create_tutorial_flow
-from enlightenai.utils.mock_data import create_mock_data
+from codetutorai.flow import create_tutorial_flow
 
 
 def parse_args() -> argparse.Namespace:
@@ -21,12 +20,19 @@ def parse_args() -> argparse.Namespace:
     Returns:
         argparse.Namespace: Parsed arguments
     """
-    parser = argparse.ArgumentParser(description="Test EnlightenAI with mock data")
+    parser = argparse.ArgumentParser(description="Test CodeTutorAI with real data")
+
+    parser.add_argument("repo_url", help="URL of the GitHub repository to analyze")
 
     parser.add_argument(
         "--output-dir",
-        default="mock_output",
-        help="Output directory for the tutorial (default: mock_output)",
+        default="tutorial_output",
+        help="Output directory for the tutorial (default: tutorial_output)",
+    )
+
+    parser.add_argument(
+        "--web-url",
+        help="URL of a website with additional information about the repository",
     )
 
     parser.add_argument(
@@ -39,6 +45,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         help="API key for the LLM provider (defaults to environment variable)",
+    )
+
+    parser.add_argument(
+        "--max-file-size",
+        type=int,
+        default=1048576,  # 1MB
+        help="Maximum file size in bytes to include (default: 1MB)",
+    )
+
+    parser.add_argument(
+        "--max-files",
+        type=int,
+        default=100,
+        help="Maximum number of files to include (default: 100)",
+    )
+
+    parser.add_argument(
+        "--include-patterns",
+        help="Comma-separated list of file patterns to include (e.g., '*.py,*.js')",
+    )
+
+    parser.add_argument(
+        "--exclude-patterns",
+        help="Comma-separated list of file patterns to exclude (e.g., '*.md,*.txt')",
+    )
+
+    parser.add_argument(
+        "--fetch-repo-metadata",
+        action="store_true",
+        help="Fetch repository metadata (stars, forks, etc.)",
     )
 
     parser.add_argument(
@@ -90,26 +126,28 @@ def main() -> int:
     # Create the output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Create mock data
-    mock_data = create_mock_data()
-
     # Create the context dictionary
     context: Dict[str, Any] = {
-        "repo_url": "https://github.com/mock/repo",
+        "repo_url": args.repo_url,
         "output_dir": args.output_dir,
+        "web_url": args.web_url,
         "llm_provider": args.llm_provider,
         "api_key": args.api_key,
+        "max_file_size": args.max_file_size,
+        "max_files": args.max_files,
+        "include_patterns": args.include_patterns.split(",")
+        if args.include_patterns
+        else None,
+        "exclude_patterns": args.exclude_patterns.split(",")
+        if args.exclude_patterns
+        else None,
         "max_chunk_size": args.max_chunk_size,
         "batch_size": args.batch_size,
         "output_formats": args.output_formats.split(","),
-        "include_patterns": ["*"],
-        "exclude_patterns": [],
-        "fetch_repo_metadata": False,
+        "ordering_method": args.ordering_method,
+        "fetch_repo_metadata": args.fetch_repo_metadata,
         "verbose": args.verbose,
     }
-
-    # Add mock data to the context
-    context.update(mock_data)
 
     # Create the tutorial flow
     flow = create_tutorial_flow()

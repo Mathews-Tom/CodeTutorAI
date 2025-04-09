@@ -1,14 +1,14 @@
 """
-EnlightenAI - Mock Data
+CodeTutorAI - Mock Data
 
-This module provides mock data for testing EnlightenAI.
+This module provides mock data for testing CodeTutorAI.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def create_mock_data() -> Dict[str, Any]:
-    """Create mock data for testing EnlightenAI.
+    """Create mock data for testing CodeTutorAI.
     
     Returns:
         dict: Dictionary containing mock data
@@ -200,7 +200,7 @@ def register_routes(app, db):
         "repo_metadata": {
             "url": "https://github.com/mock/mock-app",
             "name": "mock-app",
-            "description": "A mock application for testing EnlightenAI",
+            "description": "A mock application for testing CodeTutorAI",
             "stars": 100,
             "forks": 20,
             "issues": 5,
