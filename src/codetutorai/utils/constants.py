@@ -1,5 +1,5 @@
 """
-Constants used across the EnlightenAI application.
+Constants used across the CodeTutorAI application.
 """
 
 DEFAULT_OUTPUT_DIR = "tutorial_output"

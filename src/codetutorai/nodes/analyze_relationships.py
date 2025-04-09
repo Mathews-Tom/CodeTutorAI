@@ -1,5 +1,5 @@
 """
-EnlightenAI - Analyze Relationships Node
+CodeTutorAI - Analyze Relationships Node
 
 This module contains the AnalyzeRelationshipsNode class for analyzing relationships
 between abstractions in a codebase.
@@ -10,8 +10,8 @@ import json
 import os
 from typing import Any, Dict, List, Set, Tuple
 
-from enlightenai.nodes.node import Node
-from enlightenai.utils.llm_client import LLMClient  # Import the client class
+from codetutorai.nodes.node import Node
+from codetutorai.utils.llm_client import LLMClient  # Import the client class
 
 
 class ImportVisitor(ast.NodeVisitor):
@@ -225,7 +225,7 @@ class AnalyzeRelationshipsNode(Node):
                     # Check if imported modules correspond to other abstractions
                     for imported_module in visitor.imports:
                         # This matching is basic, might need refinement based on project structure
-                        # e.g., check if 'enlightenai.nodes.node' matches 'Node' abstraction
+                        # e.g., check if 'codetutorai.nodes.node' matches 'Node' abstraction
                         for (
                             abs_name_lower,
                             abs_name_orig,

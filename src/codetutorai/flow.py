@@ -1,5 +1,5 @@
 """
-EnlightenAI - Workflow Engine
+CodeTutorAI - Workflow Engine
 
 This module defines the tutorial generation workflow using a simple node-based
 pipeline architecture. Each node in the workflow performs a specific task and
@@ -13,13 +13,13 @@ from datetime import timedelta
 from tqdm import tqdm
 from tqdm.auto import tqdm as auto_tqdm
 
-from enlightenai.nodes.analyze_relationships import AnalyzeRelationshipsNode
-from enlightenai.nodes.combine_tutorial import CombineTutorialNode
-from enlightenai.nodes.fetch_repo_gitin import FetchRepoGitinNode
-from enlightenai.nodes.fetch_web import FetchWebNode
-from enlightenai.nodes.identify_abstractions import IdentifyAbstractionsNode
-from enlightenai.nodes.order_chapters import OrderChaptersNode
-from enlightenai.nodes.write_chapters import WriteChaptersNode
+from codetutorai.nodes.analyze_relationships import AnalyzeRelationshipsNode
+from codetutorai.nodes.combine_tutorial import CombineTutorialNode
+from codetutorai.nodes.fetch_repo_gitin import FetchRepoGitinNode
+from codetutorai.nodes.fetch_web import FetchWebNode
+from codetutorai.nodes.identify_abstractions import IdentifyAbstractionsNode
+from codetutorai.nodes.order_chapters import OrderChaptersNode
+from codetutorai.nodes.write_chapters import WriteChaptersNode
 
 
 class Flow:
@@ -238,7 +238,7 @@ class ProgressManager:
 
 
 def create_tutorial_flow():
-    """Create the EnlightenAI tutorial generation workflow.
+    """Create the CodeTutorAI tutorial generation workflow.
 
     Returns:
         Flow: A configured Flow object with all necessary nodes.

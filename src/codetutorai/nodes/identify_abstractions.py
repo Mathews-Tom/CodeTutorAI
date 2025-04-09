@@ -1,19 +1,19 @@
 """
-EnlightenAI - Identify Abstractions Node
+CodeTutorAI - Identify Abstractions Node
 
 This module contains the IdentifyAbstractionsNode class for identifying key abstractions
 in a codebase.
 """
 
-import os
 import json
+import os
 import re
-from typing import Dict, List, Any, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from tqdm import tqdm
 
-from enlightenai.nodes.node import Node
-from enlightenai.utils.llm_client import LLMClient # Import the client class
+from codetutorai.nodes.node import Node
+from codetutorai.utils.llm_client import LLMClient  # Import the client class
 
 
 class IdentifyAbstractionsNode(Node):

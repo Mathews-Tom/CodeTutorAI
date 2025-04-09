@@ -1,7 +1,7 @@
 """
-EnlightenAI - Command Line Interface
+CodeTutorAI - Command Line Interface
 
-This module provides the command line interface for EnlightenAI.
+This module provides the command line interface for CodeTutorAI.
 """
 
 import argparse
@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 
-from enlightenai.flow import create_tutorial_flow
+from codetutorai.flow import create_tutorial_flow
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:

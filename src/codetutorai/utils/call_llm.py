@@ -1,5 +1,5 @@
 """
-EnlightenAI - LLM Client
+CodeTutorAI - LLM Client
 
 This module provides a unified interface for calling different LLM providers.
 This is a compatibility layer that imports from the new llm_client module.
@@ -7,7 +7,7 @@ This is a compatibility layer that imports from the new llm_client module.
 
 from typing import Optional
 
-from enlightenai.utils.llm_client import call_llm as new_call_llm
+from codetutorai.utils.llm_client import call_llm as new_call_llm
 
 
 def call_llm(

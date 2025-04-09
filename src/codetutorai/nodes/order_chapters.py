@@ -1,15 +1,15 @@
 """
-EnlightenAI - Order Chapters Node
+CodeTutorAI - Order Chapters Node
 
 This module contains the OrderChaptersNode class for ordering tutorial chapters.
 """
 
-import os
 import json
-from typing import Dict, List, Any, Set, Tuple
+import os
+from typing import Any, Dict, List, Set, Tuple
 
-from enlightenai.nodes.node import Node
-from enlightenai.utils.call_llm import call_llm
+from codetutorai.nodes.node import Node
+from codetutorai.utils.call_llm import call_llm
 
 
 class OrderChaptersNode(Node):

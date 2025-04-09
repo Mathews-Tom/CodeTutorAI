@@ -1,6 +1,6 @@
 [project]
-name = "enlightenai"
-version = "0.1.0"
+name = "codetutorai" # Renamed
+version = "0.2.0" # Bump version
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,6 +9,7 @@ dependencies = [
     "crawl4ai>=0.5.0.post8",
     "diskcache>=5.6.3", # Added for LLM caching
     "gitin>=0.1.0",
+    "google-generativeai>=0.8.4",
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
     "streamlit>=1.44.1",

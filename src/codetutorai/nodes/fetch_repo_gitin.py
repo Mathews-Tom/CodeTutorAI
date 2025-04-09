@@ -1,5 +1,5 @@
 """
-EnlightenAI - Fetch Repository Node
+CodeTutorAI - Fetch Repository Node
 
 This module contains the FetchRepoGitinNode class for fetching a GitHub repository.
 """
@@ -10,7 +10,7 @@ import shutil
 import subprocess
 from typing import Any, Dict, List, Optional
 
-from enlightenai.nodes.node import Node
+from codetutorai.nodes.node import Node
 
 
 class FetchRepoGitinNode(Node):

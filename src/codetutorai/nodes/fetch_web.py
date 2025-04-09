@@ -1,17 +1,18 @@
 """
-EnlightenAI - Fetch Web Node
+CodeTutorAI - Fetch Web Node
 
 This module contains the FetchWebNode class for fetching web content related to a repository.
 """
 
-import os
 import json
-import requests
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 from urllib.parse import urlparse
+
+import requests
 from bs4 import BeautifulSoup
 
-from enlightenai.nodes.node import Node
+from codetutorai.nodes.node import Node
 
 
 class FetchWebNode(Node):

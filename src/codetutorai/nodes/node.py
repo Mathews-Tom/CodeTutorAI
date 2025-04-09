@@ -1,7 +1,7 @@
 """
-EnlightenAI - Base Node
+CodeTutorAI - Base Node
 
-This module contains the base Node class for the EnlightenAI workflow.
+This module contains the base Node class for the CodeTutorAI workflow.
 """
 
 

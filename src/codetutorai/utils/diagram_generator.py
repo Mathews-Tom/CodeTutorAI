@@ -1,12 +1,12 @@
 """
-EnlightenAI - Diagram Generator
+CodeTutorAI - Diagram Generator
 
 This module provides functions for generating Mermaid diagrams from code.
 """
 
 import os
 import re
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 def extract_classes(repo_dir: str, file_paths: List[str]) -> Dict[str, Dict]:
