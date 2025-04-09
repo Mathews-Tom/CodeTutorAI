@@ -5,13 +5,13 @@
 ![CodeTutorAI Banner](assets/CodeTutorAI-Banner.png)
 
 ```plaintext
-          .--""--.           _______          __       _______       __              _______ ___
-         |________|         |   _   .-----.--|  .-----|       .--.--|  |_.-----.----|   _   |   |
-             ||             |.  1___|  _  |  _  |  -__|.|   | |  |  |   _|  _  |   _|.  1   |.  |
-             ()             |.  |___|_____|_____|_____`-|.  |-|_____|____|_____|__| |.  _   |.  |
-      <-------------->      |:  1   |                   |:  |                       |:  |   |:  |
-     / \____________/ \     |::.. . |                   |::.|                       |::.|:. |::.|
-    /___\__________/___\    `-------'                   `---'                       `--- ---`---'
+      .--""--.           _______          __       _______       __              _______ ___
+     |________|         |   _   .-----.--|  .-----|       .--.--|  |_.-----.----|   _   |   |
+         ||             |.  1___|  _  |  _  |  -__|.|   | |  |  |   _|  _  |   _|.  1   |.  |
+         ()             |.  |___|_____|_____|_____`-|.  |-|_____|____|_____|__| |.  _   |.  |
+  <-------------->      |:  1   |                   |:  |                       |:  |   |:  |
+ / \____________/ \     |::.. . |                   |::.|                       |::.|:. |::.|
+/___\__________/___\    `-------'                   `---'                       `--- ---`---'
 ```
 
 **CodeTutorAI** is an AI-powered system that transforms any GitHub repository into a beginner-friendly, tutorial-style walkthrough. It analyzes the structure, abstractions, and relationships within a codebase to produce a multi-chapter guide that helps you deeply understand the inner workings of unfamiliar projects.
