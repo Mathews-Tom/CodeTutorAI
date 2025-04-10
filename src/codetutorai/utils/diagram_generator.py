@@ -8,6 +8,8 @@ import os
 import re
 from typing import Any, Dict, List
 
+from .formatting import sanitize_mermaid_label # Added import
+
 
 def extract_classes(repo_dir: str, file_paths: List[str]) -> Dict[str, Dict]:
     """Extract class definitions from Python files.
@@ -82,18 +84,39 @@ def generate_class_diagram(classes: Dict[str, Dict]) -> str:
     """
     diagram = ["```mermaid", "classDiagram"]
 
-    # Add class definitions
+    # Pass 1: Define all class blocks and their methods
+    defined_classes = {} # Map original name to sanitized name for valid classes
     for class_name, info in classes.items():
-        # Add inheritance relationships
-        for parent in info["parents"]:
-            if parent in classes:
-                diagram.append(f"    {parent} <|-- {class_name}")
+        sanitized_class_name = sanitize_mermaid_label(class_name)
+        # Ensure the sanitized name is valid and unique before defining the block
+        if sanitized_class_name and sanitized_class_name not in defined_classes.values():
+            defined_classes[class_name] = sanitized_class_name
+            diagram.append(f"    class {sanitized_class_name} {{")
+            for method in info["methods"]:
+                sanitized_method_name = sanitize_mermaid_label(method)
+                if sanitized_method_name: # Ensure method name is valid
+                    # Remove explicit '+' for public methods, simplifying syntax
+                    diagram.append(f"        {sanitized_method_name}()")
+            diagram.append("    }")
+        elif not sanitized_class_name:
+             print(f"Warning: Skipping class '{class_name}' due to invalid sanitized name.") # Optional: Add logging/warning
+        # If sanitized_class_name is already in defined_classes.values(), it's a duplicate after sanitization, skip block definition
 
-        # Add class with methods
-        diagram.append(f"    class {class_name} {{")
-        for method in info["methods"]:
-            diagram.append(f"        +{method}()")
-        diagram.append("    }")
+
+    # Pass 2: Define all inheritance relationships, avoiding duplicates
+    added_relationships = set() # Track added relationships as (parent_sanitized, child_sanitized) tuples
+    for class_name, info in classes.items():
+        child_sanitized = defined_classes.get(class_name)
+        if not child_sanitized: # Skip if the child class wasn't validly defined
+            continue
+
+        for parent in info["parents"]:
+            parent_sanitized = defined_classes.get(parent)
+            if parent_sanitized: # Ensure parent was also validly defined
+                relationship = (parent_sanitized, child_sanitized)
+                if relationship not in added_relationships:
+                    diagram.append(f"    {parent_sanitized} <|-- {child_sanitized}")
+                    added_relationships.add(relationship)
 
     diagram.append("```")
     return "\n".join(diagram)
@@ -169,17 +192,33 @@ def generate_component_diagram(components: Dict[str, Dict]) -> str:
     diagram = ["```mermaid", "flowchart TD"]
 
     # Add component definitions
-    for component_name, info in components.items():
-        # Simplify component name for display
-        display_name = component_name.split(".")[-1]
-        diagram.append(f"    {display_name}[{display_name}]")
+    component_ids = {} # Map original name to sanitized ID
+    processed_ids = set() # Track processed sanitized IDs
 
-    # Add dependencies
-    for component_name, info in components.items():
+    for component_name in components.keys():
+        # Simplify component name for display and sanitize it for use as ID
         display_name = component_name.split(".")[-1]
+        sanitized_id = sanitize_mermaid_label(display_name)
+        if not sanitized_id or sanitized_id in processed_ids:
+            # Handle empty or duplicate sanitized IDs (e.g., skip or generate unique)
+            # For now, we map the original name but might skip adding the node if ID conflicts
+            component_ids[component_name] = None # Mark as problematic
+            continue
+        component_ids[component_name] = sanitized_id
+        processed_ids.add(sanitized_id)
+        # Use the sanitized ID for the node ID, keep original-like display name for label
+        diagram.append(f'    {sanitized_id}["{display_name}"]') # Use quotes for label
+
+    # Add dependencies using sanitized IDs
+    for component_name, info in components.items():
+        source_id = component_ids.get(component_name)
+        if not source_id: # Skip if source node was problematic
+            continue
+
         for dependency in info.get("dependencies", []):
-            dep_display_name = dependency.split(".")[-1]
-            diagram.append(f"    {dep_display_name} --> {display_name}")
+            target_id = component_ids.get(dependency)
+            if target_id: # Ensure target node exists and is valid
+                diagram.append(f"    {target_id} --> {source_id}") # Arrow from dependency to component
 
     diagram.append("```")
     return "\n".join(diagram)

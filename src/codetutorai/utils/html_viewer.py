@@ -168,21 +168,22 @@ def _get_html(
     # Convert chapter contents to JSON
     chapter_contents_str = json.dumps(chapter_contents_json)
 
-    # Create the diagrams section if available
-    diagrams_html = ""
+    # Create the diagrams section in the TOC if available
+    diagrams_toc_html = ""
     if diagrams:
-        diagrams_html = """
-        <div class="diagrams-section">
+        diagrams_toc_html = """
+            </ul> <!-- Close chapter list -->
             <h2>Diagrams</h2>
             <ul>
-        """
+        """ # Add closing tag for chapter list and new header/list for diagrams
         for diagram_type in diagrams:
             display_name = diagram_type.replace("_", " ").title()
-            diagrams_html += f'<li><a href="#" data-diagram="{diagram_type}.md">{display_name}</a></li>'
-        diagrams_html += """
+            # Use data-diagram attribute to identify diagram files in JS
+            diagrams_toc_html += f'<li><a href="#" data-diagram="{diagram_type}.md">{display_name}</a></li>'
+        diagrams_toc_html += """
             </ul>
-        </div>
-        """
+            <ul> <!-- Re-open list for potential future sections -->
+        """ # Close diagram list and re-open for structure
 
     # Create the HTML content
     html = f"""<!DOCTYPE html>
@@ -193,7 +194,7 @@ def _get_html(
     <title>{title}</title>
     <link rel="stylesheet" href="assets/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -205,9 +206,9 @@ def _get_html(
                 <h2>Table of Contents</h2>
                 <ul>
                     {toc_html}
+                    {diagrams_toc_html} <!-- Integrate diagram links into TOC structure -->
                 </ul>
             </div>
-            {diagrams_html}
         </div>
         <div class="content">
             <div id="chapter-content">
@@ -505,48 +506,83 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get diagram filename
             const diagramFile = this.getAttribute('data-diagram');
 
-            // Get diagram content from embedded store
-            const mermaidCode = diagramContents[diagramFile];
+            // Get the raw Markdown content for the diagram
+            const diagramMarkdown = diagramContents[diagramFile];
 
-            if (mermaidCode) {
-                 // Get diagram type for title
-                 // Title case the diagram type using JavaScript
-                 const diagramTypeName = diagramFile.replace('.md', '').replace('_', ' ');
-                 const diagramType = diagramTypeName.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-                 // Clean and insert the Mermaid code into a div Mermaid can process
-                 let cleanedMermaidCode = mermaidCode.trim();
-                 if (cleanedMermaidCode.startsWith('```mermaid')) {
-                     cleanedMermaidCode = cleanedMermaidCode.substring('```mermaid'.length);
-                 }
-                 if (cleanedMermaidCode.endsWith('```')) {
-                     cleanedMermaidCode = cleanedMermaidCode.substring(0, cleanedMermaidCode.length - '```'.length);
-                 }
-                 chapterContent.innerHTML = `<h1>${diagramType}</h1><div class="mermaid">${cleanedMermaidCode.trim()}</div>`;
+            if (diagramMarkdown) {
+                // Use marked.parse to render the entire Markdown content
+                // This will handle the ```mermaid block correctly
+                chapterContent.innerHTML = marked.parse(diagramMarkdown);
 
-                 // Re-initialize Mermaid for the newly added diagram within the content area
-                 mermaid.init(undefined, chapterContent.querySelectorAll('.mermaid'));
+                // Initialize Mermaid on the newly added content
+                // Mermaid looks for elements with class="mermaid"
+                try {
+                    // Use mermaid.run() for dynamic content as per newer Mermaid APIs
+                    // mermaid.init() might be deprecated or behave differently
+                    mermaid.run({
+                         nodes: chapterContent.querySelectorAll('.mermaid')
+                    });
+                } catch (error) {
+                     console.error("Mermaid rendering error:", error);
+                     // Optionally display an error message in the UI
+                     const errorDiv = document.createElement('div');
+                     errorDiv.style.color = 'red';
+                     errorDiv.textContent = 'Error rendering Mermaid diagram. Check console for details.';
+                     // Append error message safely
+                     const mermaidElement = chapterContent.querySelector('.mermaid');
+                     if (mermaidElement) {
+                         mermaidElement.parentNode.insertBefore(errorDiv, mermaidElement.nextSibling);
+                     } else {
+                         chapterContent.appendChild(errorDiv);
+                     }
+                }
             } else {
-                 console.error('Error loading diagram:', diagramFile, 'Content not found in embedded store.');
-                 chapterContent.innerHTML = `<h1>Error</h1><p>Failed to load diagram content: ${diagramFile}</p><p>Content not found.</p>`;
+                console.error('Error loading diagram:', diagramFile, 'Content not found in embedded store.');
+                chapterContent.innerHTML = `<h1>Error</h1><p>Failed to load diagram content: ${diagramFile}</p><p>Content not found.</p>`;
             }
         });
     });
 
-    // Load the first chapter by default if available
+    // Load initial content
     if (chapterLinks.length > 0) {
-        chapterLinks[0].click();
+        // Get the filename of the first chapter
+        const firstChapterFile = chapterLinks[0].getAttribute('data-chapter');
+        const firstChapterData = chapterContents[firstChapterFile];
+
+        if (firstChapterData) {
+            // Directly render the first chapter's content from the embedded store
+            chapterContent.innerHTML = marked.parse(firstChapterData);
+            // Activate the first link
+            chapterLinks[0].classList.add('active');
+            // Render any mermaid diagrams in the initial chapter
+             try {
+                 mermaid.run({ nodes: chapterContent.querySelectorAll('.mermaid') });
+             } catch (error) {
+                 console.error("Mermaid rendering error on initial load:", error);
+             }
+        } else {
+            // Fallback if first chapter content wasn't embedded (should not happen ideally)
+            console.error('Error loading first chapter:', firstChapterFile, 'Content not found in embedded store.');
+            chapterContent.innerHTML = `<h1>Error</h1><p>Failed to load initial chapter content: ${firstChapterFile}</p><p>Content not found.</p>`;
+        }
     } else {
-        // If no chapters are available, load the default chapter
+        // If no chapters are available, display a message directly (no_chapters.md isn't strictly needed)
+        chapterContent.innerHTML = '<h1>No Chapters Available</h1><p>No chapters were generated for this repository. Please try again with different parameters.</p>';
+        // We could still try to fetch no_chapters.md as a fallback if needed, but direct message is simpler.
+        /*
         fetch('chapters/no_chapters.md')
-            .then(response => response.text())
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.text();
+            })
             .then(markdown => {
-                // Render markdown
                 chapterContent.innerHTML = marked.parse(markdown);
             })
             .catch(error => {
                 console.error('Error loading default chapter:', error);
                 chapterContent.innerHTML = '<h1>No Chapters Available</h1><p>No chapters were generated for this repository. Please try again with different parameters.</p>';
             });
+        */
     }
 });
 """

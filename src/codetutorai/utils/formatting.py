@@ -8,6 +8,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 
+
 def format_code_block(code: str, language: str = "") -> str:
     """Format code as a Markdown code block.
 
@@ -239,3 +240,57 @@ def format_duration(seconds: float) -> str:
         parts.append(f"{secs}s")
 
     return " ".join(parts)
+# Common Mermaid keywords (add more if needed)
+MERMAID_KEYWORDS = {
+    "graph", "subgraph", "end", "classDiagram", "stateDiagram", "sequenceDiagram",
+    "gantt", "pie", "flowchart", "class", "state", "style", "link", "click",
+    "direction", "TB", "BT", "RL", "LR", "TD", "participant", "actor", "note",
+    "loop", "alt", "opt", "par", "critical", "break", "rect", "circle", "ellipse",
+    "diamond", "hexagon", "roundrect", "label", "arrowhead", "arrowtail",
+    "line", "stroke", "fill", "color", "font", "align", "width", "height",
+    "margin", "padding", "border", "background", "foreground", "text", "title",
+    "section", "dateFormat", "axisFormat", "tickInterval", "excludes", "includes",
+    "todayMarker", "theme", "securityLevel", "startOnLoad", "htmlLabels",
+    "nodeSpacing", "rankSpacing", "curve", "stepBefore", "stepAfter", "basis",
+    "linear", "cardinal", "catmullRom", "monotoneX", "monotoneY", "natural",
+    "%%", "---", "-->", "--", "->", "-.", "-.->", "==>", "==", "<--", "<-", "<->",
+    "<-->", "o--", "--o", "x--", "--x", "<<--", "-->>", "o->", "<-o", "x->", "<-x",
+    "..>", "<..", "..", ".."
+}
+
+def sanitize_mermaid_label(label: str) -> str:
+    """Removes or replaces potentially problematic characters for Mermaid IDs/labels.
+
+    Keeps alphanumeric characters and underscores. Replaces others with an underscore.
+    Ensures the ID starts with a letter (prepends 'cls_' if needed).
+    Prevents labels starting/ending with underscores unless original did.
+    Appends '_' if the sanitized label matches a Mermaid keyword.
+    Ensures the label is not empty.
+    """
+    if not label:
+        return "cls_unknown" # Return a valid default ID
+
+    original_label = label # Keep original for start/end underscore check
+
+    # Replace sequences of non-alphanumeric (excluding underscore) with a single underscore
+    sanitized = re.sub(r'[^\w]+', '_', label)
+
+    # Remove leading/trailing underscores unless the original label had them
+    if not original_label.startswith('_') and sanitized.startswith('_'):
+        sanitized = sanitized.lstrip('_')
+    if not original_label.endswith('_') and sanitized.endswith('_'):
+        sanitized = sanitized.rstrip('_')
+
+    # Ensure the result is not empty after stripping
+    if not sanitized:
+        return "cls_empty" # Return a valid default ID if sanitization results in empty
+
+    # Ensure the ID starts with a letter
+    if not sanitized[0].isalpha():
+        sanitized = "cls_" + sanitized
+
+    # Check against keywords (case-insensitive check, but append to original case)
+    if sanitized.lower() in MERMAID_KEYWORDS:
+        sanitized += "_"
+
+    return sanitized

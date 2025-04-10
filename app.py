@@ -6,6 +6,7 @@ from pathlib import Path
 
 import diskcache  # Import diskcache for clearing
 import streamlit as st
+
 # Load environment variables from .env file if it exists
 from dotenv import load_dotenv
 
@@ -15,29 +16,35 @@ load_dotenv()
 
 try:
     from codetutorai.flow import create_tutorial_flow
-    from codetutorai.utils.constants import (DEFAULT_CACHE_DIR,
-                                             DEFAULT_OUTPUT_DIR)
-    from codetutorai.utils.formatting import (format_duration,
-                                              get_repo_info_from_url,
-                                              is_valid_github_url)
+    from codetutorai.utils.constants import DEFAULT_CACHE_DIR, DEFAULT_OUTPUT_DIR
+    from codetutorai.utils.formatting import (
+        format_duration,
+        get_repo_info_from_url,
+        is_valid_github_url,
+    )
     from codetutorai.utils.history_manager import (  # Added import
-        DEFAULT_HISTORY_FILENAME, load_github_url_history,
-        save_generation_metadata)
-    from codetutorai.utils.html_viewer import \
-        open_html_viewer  # Import the viewer function
+        DEFAULT_HISTORY_FILENAME,
+        load_github_url_history,
+        save_generation_metadata,
+    )
+    from codetutorai.utils.html_viewer import (
+        open_html_viewer,  # Import the viewer function
+    )
 except ImportError as e:
     import traceback
 
     st.error(
-        f"Could not import CodeTutorAI modules. Specific error: {e}\n" # Renamed
+        f"Could not import CodeTutorAI modules. Specific error: {e}\n"  # Renamed
         f"Traceback:\n{traceback.format_exc()}\n\n"
-        "Make sure CodeTutorAI and all its dependencies are installed correctly " # Renamed
+        "Make sure CodeTutorAI and all its dependencies are installed correctly "  # Renamed
         "in the '.venv' environment and the script is run from the project root."
     )
     st.stop()
 
 # --- Page Configuration ---
-st.set_page_config(page_title="CodeTutorAI Tutorial Generator", layout="wide") # Renamed
+st.set_page_config(
+    page_title="CodeTutorAI Tutorial Generator", layout="wide"
+)  # Renamed
 
 
 # --- Initialize Session State ---
@@ -51,8 +58,8 @@ def init_session_state():
         "output_formats": ["markdown", "viewer"],  # Default updated
         "generate_diagrams": True,  # Default updated
         "open_viewer": True,  # Default updated
-        "llm_provider": "Google",  # Default updated
-        "llm_model": "Gemini 1.5 Flash",  # Default updated as requested
+        "llm_provider": "OpenAI",
+        "llm_model": "GPT-4O",
         "api_key": "",
         "max_file_size": 1048576,
         "max_files": 100,
@@ -64,16 +71,16 @@ def init_session_state():
         "batch_size": 1,
         "cache_enabled": True,  # Default updated
         "cache_dir": DEFAULT_CACHE_DIR,
-        "force_regeneration": False, # Added state for forcing regeneration
+        "force_regeneration": False,  # Added state for forcing regeneration
         "running": False,  # Flag to indicate if generation is in progress
         "status_message": "",
         "progress_value": 0.0,
         "result_message": "",
         "viewer_path": None,  # Store path to viewer HTML if generated
         # "view_results_enabled" flag removed, will rely directly on path existence
-        "viewer_auto_opened": False, # Flag to track if viewer was opened automatically (May remove later if new approach works)
-        "last_successful_viewer_path": None, # Persists path for manual button
-        "confirm_clear_output": False, # Flag for confirmation step
+        "viewer_auto_opened": False,  # Flag to track if viewer was opened automatically (May remove later if new approach works)
+        "last_successful_viewer_path": None,  # Persists path for manual button
+        "confirm_clear_output": False,  # Flag for confirmation step
     }
     # Original logic: Only set if key doesn't exist
     for key, value in defaults.items():
@@ -85,8 +92,8 @@ init_session_state()
 
 # Helper function moved to formatting.py
 # --- UI Layout ---
-st.title("💡 CodeTutorAI: Demystify Codebases 🔑") # Renamed
-st.markdown("Generate programming tutorials automatically from GitHub repositories.")
+st.title("CodeTutorAI  🧑‍🏫 💻 🤖: Understand Codebases Faster")  # Renamed
+st.markdown("Your AI-powered guide through any GitHub repo.")
 
 # --- Input Area ---
 st.header("Input URLs")
@@ -106,7 +113,7 @@ try:
         current_selection_index = selectbox_options.index(st.session_state.repo_url)
     else:
         # Default to "Add New" if current URL is empty or not in history
-        current_selection_index = 0 # Index of add_new_option
+        current_selection_index = 0  # Index of add_new_option
 except ValueError:
     # Fallback if something unexpected happens
     current_selection_index = 0
@@ -117,7 +124,7 @@ selected_option = st.selectbox(
     selectbox_options,
     index=current_selection_index,
     disabled=st.session_state.running,
-    help="Select a previously used URL or choose 'Add New URL'."
+    help="Select a previously used URL or choose 'Add New URL'.",
 )
 
 # Display text input only if "Add New" is selected
@@ -125,10 +132,10 @@ new_repo_url = ""
 if selected_option == add_new_option:
     new_repo_url = st.text_input(
         "Enter New GitHub URL:",
-        value="", # Start empty for new input
+        value="",  # Start empty for new input
         placeholder="https://github.com/user/repo",
         disabled=st.session_state.running,
-        key="new_repo_url_input" # Add key for state management
+        key="new_repo_url_input",  # Add key for state management
     )
     # Update session state based on the text input
     st.session_state.repo_url = new_repo_url
@@ -192,7 +199,7 @@ with st.expander("Basic Options", expanded=True):
             value=st.session_state.force_regeneration,
             disabled=st.session_state.running,
             help="If checked, LLM calls will not use cached results and will overwrite existing cache entries.",
-            key="force_regen_checkbox" # Added key for clarity
+            key="force_regen_checkbox",  # Added key for clarity
         )
 
 with st.expander("LLM & API"):
@@ -213,7 +220,7 @@ with st.expander("LLM & API"):
         # Updated model lists based on user feedback
         models_by_provider = {
             "Google": [
-                "Gemini 1.5 Flash", # Default
+                "Gemini 1.5 Flash",  # Default
                 "Gemini 1.5 Pro",
                 "Gemini 2.0 Flash",
                 "Gemini 2.5 Pro Preview",
@@ -225,7 +232,7 @@ with st.expander("LLM & API"):
                 "GPT-3.5 Turbo",
             ],
             "Anthropic": [
-                "Claude 3.5 Haiku", # Defaulting to cheaper/faster Sonnet/Haiku
+                "Claude 3.5 Haiku",  # Defaulting to cheaper/faster Sonnet/Haiku
                 "Claude 3.5 Sonnet",
                 "Claude 3.7 Sonnet",
                 "Claude 3 Opus",
@@ -261,10 +268,10 @@ with st.expander("LLM & API"):
         )
     with col2:
         st.session_state.api_key = st.text_input(
-            "API Key", # Removed (Optional)
+            "API Key",  # Removed (Optional)
             value=st.session_state.api_key,
             type="password",
-            help="Required if not set as environment variable (e.g., GOOGLE_API_KEY, OPENAI_API_KEY)", # Updated help text
+            help="Required if not set as environment variable (e.g., GOOGLE_API_KEY, OPENAI_API_KEY)",  # Updated help text
             disabled=st.session_state.running,
         )
 
@@ -340,7 +347,7 @@ with st.expander("Caching"):
         clear_cache_button = st.button(
             "Clear Cache",
             disabled=st.session_state.running or not st.session_state.cache_enabled,
-            help="Deletes all cached LLM responses from the specified cache directory."
+            help="Deletes all cached LLM responses from the specified cache directory.",
         )
     with col2:
         st.session_state.cache_dir = st.text_input(
@@ -353,7 +360,7 @@ with st.expander("Caching"):
 
 # --- Action Buttons ---
 st.header("Actions")
-col1, col2, col3, col4 = st.columns(4) # Back to 4 columns
+col1, col2, col3, col4 = st.columns(4)  # Back to 4 columns
 
 with col1:
     # Check if the repo URL is valid
@@ -363,31 +370,38 @@ with col1:
         type="primary",
         # Disable if running OR if the URL is invalid/empty
         disabled=st.session_state.running or not is_url_valid,
-        help="Start generating the tutorial for the specified repository." # Added tooltip
+        help="Start generating the tutorial for the specified repository.",  # Added tooltip
     )
 
 # Removed misplaced clear_output_button definition from col1
 
-with col2: # View Results button
+with col2:  # View Results button
     # Add View Results button, disabled initially and when running
     # Debugging removed
     view_results_button = st.button(
         "View Results",
         # Simplified: Enable only if a persistent viewer path exists (ignoring os.path.exists for now)
-        disabled=not st.session_state.get('last_successful_viewer_path'), # Use .get() for safety
-        key="view_results_btn", # Added explicit key
-        help="Open the generated HTML viewer for the last successful run." # Added tooltip
+        disabled=not st.session_state.get(
+            "last_successful_viewer_path"
+        ),  # Use .get() for safety
+        key="view_results_btn",  # Added explicit key
+        help="Open the generated HTML viewer for the last successful run.",  # Added tooltip
     )
 
-with col3: # Add Clear Output button here
+with col3:  # Add Clear Output button here
     clear_output_button = st.button(
         "Clear Output",
-        disabled=st.session_state.running or not is_url_valid, # Keep disabled if no valid URL
-        help="Delete generated output for the current repo, or all outputs." # Updated tooltip
+        disabled=st.session_state.running
+        or not is_url_valid,  # Keep disabled if no valid URL
+        help="Delete generated output for the current repo, or all outputs.",  # Updated tooltip
     )
 
-with col4: # Reset Application button
-    reset_button = st.button("Reset Application", type="secondary", help="Resets all inputs and session state to defaults.") # Renamed button
+with col4:  # Reset Application button
+    reset_button = st.button(
+        "Reset Application",
+        type="secondary",
+        help="Resets all inputs and session state to defaults.",
+    )  # Renamed button
 # --- Confirmation Logic for Clear Output ---
 if st.session_state.get("confirm_clear_output", False):
     st.warning("⚠️ Are you sure you want to clear generated output?")
@@ -409,7 +423,11 @@ if st.session_state.get("confirm_clear_output", False):
         confirm_clear_specific = st.button(
             f"Clear Specific Output ({specific_repo_path_str})",
             type="primary",
-            disabled=not (output_subdir_path and output_subdir_path.exists() and output_subdir_path.is_dir())
+            disabled=not (
+                output_subdir_path
+                and output_subdir_path.exists()
+                and output_subdir_path.is_dir()
+            ),
         )
 
     with confirm_col2:
@@ -417,7 +435,9 @@ if st.session_state.get("confirm_clear_output", False):
         base_output_dir_path = Path(st.session_state.output_dir)
         confirm_clear_all = st.button(
             f"Clear ALL Outputs in ({st.session_state.output_dir})",
-            disabled=not (base_output_dir_path.exists() and base_output_dir_path.is_dir())
+            disabled=not (
+                base_output_dir_path.exists() and base_output_dir_path.is_dir()
+            ),
         )
 
     with confirm_col3:
@@ -427,39 +447,60 @@ if st.session_state.get("confirm_clear_output", False):
         try:
             shutil.rmtree(output_subdir_path)
             st.success(f"Successfully deleted: {output_subdir_path}")
-            st.session_state.viewer_path = None # Clear related state
+            st.session_state.viewer_path = None  # Clear related state
             st.session_state.last_successful_viewer_path = None
-            st.session_state.confirm_clear_output = False # Hide confirmation
+            st.session_state.confirm_clear_output = False  # Hide confirmation
             st.rerun()
         except OSError as e:
             st.error(f"Error deleting {output_subdir_path}: {e}")
-            st.session_state.confirm_clear_output = False # Hide confirmation on error too
+            st.session_state.confirm_clear_output = (
+                False  # Hide confirmation on error too
+            )
             st.rerun()
 
     if confirm_clear_all:
         try:
-            # Iterate and remove subdirectories, keep files like history.json
-            deleted_count = 0
-            kept_files = []
+            # Iterate and remove subdirectories
+            deleted_dir_count = 0
+            deleted_history = False
+            history_file_path = (
+                base_output_dir_path / DEFAULT_HISTORY_FILENAME
+            )  # Get history file path
+
             for item in base_output_dir_path.iterdir():
                 if item.is_dir():
                     shutil.rmtree(item)
-                    deleted_count += 1
-                else:
-                    kept_files.append(item.name) # Keep track of files not deleted
-            kept_files_str = f" Kept files: {', '.join(kept_files)}." if kept_files else ""
-            st.success(f"Deleted {deleted_count} subdirectories in {base_output_dir_path}.{kept_files_str}")
-            st.session_state.viewer_path = None # Clear related state
+                    deleted_dir_count += 1
+                elif item == history_file_path:  # Check if it's the history file
+                    try:
+                        item.unlink()  # Delete the history file
+                        deleted_history = True
+                    except OSError as e_hist:
+                        st.warning(
+                            f"Could not delete history file {item.name}: {e_hist}"
+                        )
+                # Other files are implicitly kept now
+
+            # Report deletion status
+            success_msg = (
+                f"Deleted {deleted_dir_count} subdirectories in {base_output_dir_path}."
+            )
+            if deleted_history:
+                success_msg += f" Deleted {DEFAULT_HISTORY_FILENAME}."
+            st.success(success_msg)
+            st.session_state.viewer_path = None  # Clear related state
             st.session_state.last_successful_viewer_path = None
-            st.session_state.confirm_clear_output = False # Hide confirmation
+            st.session_state.confirm_clear_output = False  # Hide confirmation
             st.rerun()
         except OSError as e:
             st.error(f"Error clearing subdirectories in {base_output_dir_path}: {e}")
-            st.session_state.confirm_clear_output = False # Hide confirmation on error too
+            st.session_state.confirm_clear_output = (
+                False  # Hide confirmation on error too
+            )
             st.rerun()
 
     if cancel_clear:
-        st.session_state.confirm_clear_output = False # Hide confirmation
+        st.session_state.confirm_clear_output = False  # Hide confirmation
         st.rerun()
 
 # --- Status/Progress Area ---
@@ -507,14 +548,14 @@ def streamlit_progress_callback(message: str, progress: float):
 # --- Button Logic ---
 # "Clear Inputs" button and logic removed
 # Logic for the Clear Cache button (added in the Caching expander)
-if 'clear_cache_button' in locals() and clear_cache_button:
+if "clear_cache_button" in locals() and clear_cache_button:
     cache_dir_path = Path(st.session_state.cache_dir)
     if cache_dir_path.exists() and cache_dir_path.is_dir():
         try:
             # Use diskcache to clear the cache directory
             cache = diskcache.Cache(str(cache_dir_path))
             cache.clear()
-            cache.close() # Important to close the cache object
+            cache.close()  # Important to close the cache object
             st.success(f"Cache cleared successfully at: {cache_dir_path}")
             # Optionally remove the directory itself if empty, but clearing contents is safer
             # if not any(cache_dir_path.iterdir()):
@@ -525,10 +566,10 @@ if 'clear_cache_button' in locals() and clear_cache_button:
         st.warning(f"Cache directory not found or is not a directory: {cache_dir_path}")
     # No rerun needed, just display message
 # Logic for the Clear Output button
-if 'clear_output_button' in locals() and clear_output_button:
+if "clear_output_button" in locals() and clear_output_button:
     # Set flag to show confirmation options
     st.session_state.confirm_clear_output = True
-    st.rerun() # Rerun to display confirmation
+    st.rerun()  # Rerun to display confirmation
 
 if generate_button:
     # Initial validation for GitHub URL (already implicitly handled by button disable state, but good practice)
@@ -537,7 +578,9 @@ if generate_button:
     else:
         # --- API Key Validation ---
         api_key_present = False
-        selected_provider = st.session_state.llm_provider.lower() # Ensure lowercase for matching
+        selected_provider = (
+            st.session_state.llm_provider.lower()
+        )  # Ensure lowercase for matching
         env_var_map = {
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",
@@ -555,29 +598,35 @@ if generate_button:
         # --- End API Key Validation ---
 
         if not api_key_present:
-            st.error(f"API Key for {st.session_state.llm_provider} is missing. Please provide it in the input field or set the '{env_var}' environment variable.")
+            st.error(
+                f"API Key for {st.session_state.llm_provider} is missing. Please provide it in the input field or set the '{env_var}' environment variable."
+            )
         else:
             # Proceed with generation if URL and API key are valid
-            st.info(f"Using API key from {api_key_source}.") # Optional: Inform user where key was found
+            st.info(
+                f"Using API key from {api_key_source}."
+            )  # Optional: Inform user where key was found
             st.session_state.running = True
             st.session_state.status_message = "Starting generation..."
             st.session_state.progress_value = 0.0
             st.session_state.result_message = ""
             st.session_state.viewer_path = None  # Reset viewer path on new run
-            st.session_state.viewer_auto_opened = False # Reset auto-open flag
-            st.session_state.view_results_enabled = False  # Disable view button on new run
+            st.session_state.viewer_auto_opened = False  # Reset auto-open flag
+            st.session_state.view_results_enabled = (
+                False  # Disable view button on new run
+            )
             st.rerun()  # Rerun to disable inputs and show progress
 
-if 'reset_button' in locals() and reset_button:
+if "reset_button" in locals() and reset_button:
     # Clear all existing session state keys first
     st.info("Resetting application state...")
-    keys_to_clear = list(st.session_state.keys()) # Get keys before iterating
+    keys_to_clear = list(st.session_state.keys())  # Get keys before iterating
     for key in keys_to_clear:
         del st.session_state[key]
     # Now initialize with defaults
     init_session_state()
     # No need to clear messages explicitly, init_session_state handles it now
-    st.rerun() # Rerun to reflect cleared inputs and state
+    st.rerun()  # Rerun to reflect cleared inputs and state
 
 # --- Generation Logic (Placeholder) ---
 if st.session_state.running:
@@ -586,9 +635,9 @@ if st.session_state.running:
     if not repo_info:
         # This case should ideally not be reached due to button disabling logic
         st.error("Invalid GitHub URL detected during context creation.")
-        st.session_state.running = False # Stop running state
-        st.rerun() # Rerun to show error and re-enable inputs
-        st.stop() # Stop script execution for this run
+        st.session_state.running = False  # Stop running state
+        st.rerun()  # Rerun to show error and re-enable inputs
+        st.stop()  # Stop script execution for this run
 
     repo_subdir_name = f"{repo_info['username']}_{repo_info['repo_name']}"
     # Ensure the base output directory exists
@@ -597,8 +646,12 @@ if st.session_state.running:
         base_output_dir.mkdir(parents=True, exist_ok=True)
         repo_output_dir = base_output_dir / repo_subdir_name
         repo_output_dir.mkdir(parents=True, exist_ok=True)
-        final_output_dir = str(repo_output_dir) # Use the specific repo dir for the flow
-        st.session_state.current_output_dir = final_output_dir # Store for potential later use (e.g., success message)
+        final_output_dir = str(
+            repo_output_dir
+        )  # Use the specific repo dir for the flow
+        st.session_state.current_output_dir = (
+            final_output_dir  # Store for potential later use (e.g., success message)
+        )
     except OSError as e:
         st.error(f"Failed to create output directory: {e}")
         st.session_state.running = False
@@ -606,11 +659,10 @@ if st.session_state.running:
         st.stop()
     # --- End Prepare Output Directory ---
 
-
     # Construct context dictionary
     context = {
         "repo_url": st.session_state.repo_url,
-        "output_dir": final_output_dir, # Use the specific repo output directory
+        "output_dir": final_output_dir,  # Use the specific repo output directory
         "web_url": st.session_state.web_url or None,  # Handle empty string
         "llm_provider": st.session_state.llm_provider,
         "api_key": st.session_state.api_key or None,  # Handle empty string
@@ -634,12 +686,14 @@ if st.session_state.running:
         "open_viewer": st.session_state.open_viewer,
         "cache_enabled": st.session_state.cache_enabled,
         "cache_dir": st.session_state.cache_dir,
-        "force_regeneration": st.session_state.force_regeneration, # Pass force flag
+        "force_regeneration": st.session_state.force_regeneration,  # Pass force flag
         "progress_callback": streamlit_progress_callback,  # Pass the actual callback
     }
 
     # --- Actual flow execution ---
-    st.info(f"Generating tutorial in: {final_output_dir}") # Inform user about the output location
+    st.info(
+        f"Generating tutorial in: {final_output_dir}"
+    )  # Inform user about the output location
     try:
         # The callback is already defined globally and assigned to context at line 310
         # No need to redefine or reassign here
@@ -658,14 +712,14 @@ if st.session_state.running:
         # Removed duplicated debug block
 
         # --- Success ---
-        output_location = st.session_state.get("current_output_dir", final_output_dir) # Use the specific output dir
+        output_location = st.session_state.get(
+            "current_output_dir", final_output_dir
+        )  # Use the specific output dir
         # Add duration to the success message
-        st.session_state.result_message = (
-            f"Tutorial generated successfully in {output_location} (took {format_duration(duration)})" # Use new formatter
-        )
+        st.session_state.result_message = f"Tutorial generated successfully in {output_location} (took {format_duration(duration)})"  # Use new formatter
         # Add note about cache status based on settings and timing heuristic
         cache_status_note = ""
-        CACHE_HIT_THRESHOLD_SECONDS = 5 # Heuristic threshold
+        CACHE_HIT_THRESHOLD_SECONDS = 5  # Heuristic threshold
 
         if not st.session_state.cache_enabled:
             cache_status_note = "(Cache was disabled)"
@@ -676,7 +730,7 @@ if st.session_state.running:
             else:
                 # Took longer, assume successful forced regeneration
                 cache_status_note = "(Forced regeneration - cache updated)"
-        else: # Cache enabled, not forcing
+        else:  # Cache enabled, not forcing
             if duration < CACHE_HIT_THRESHOLD_SECONDS:
                 cache_status_note = "(Result likely from cache)"
             else:
@@ -694,9 +748,9 @@ if st.session_state.running:
             metadata_to_save = {
                 # Use context for values passed to the flow
                 "repo_url": context.get("repo_url"),
-                "output_path": output_location, # The specific repo output dir
+                "output_path": output_location,  # The specific repo output dir
                 "llm_provider": context.get("llm_provider"),
-                "llm_model": st.session_state.llm_model, # Get selected model from state
+                "llm_model": st.session_state.llm_model,  # Get selected model from state
                 "depth": context.get("depth"),
                 "language": context.get("language"),
                 "output_formats": context.get("output_formats"),
@@ -747,11 +801,11 @@ if st.session_state.running:
 
     finally:
         # Preserve the viewer path before resetting running state
-        temp_viewer_path = st.session_state.get('last_successful_viewer_path')
+        temp_viewer_path = st.session_state.get("last_successful_viewer_path")
         # Ensure running state is reset
         st.session_state.running = False
         # Removed preservation logic - state should persist normally
-        st.rerun() # Re-adding rerun to see if it affects state persistence timing
+        st.rerun()  # Re-adding rerun to see if it affects state persistence timing
 # Debugging lines removed
 
 # --- View Results Button Logic ---
@@ -767,14 +821,14 @@ if view_results_button:
         st.warning(
             "Viewer HTML path not found or file does not exist. Cannot open viewer."
         )
-        
+
         # --- Automatic Viewer Opening Logic (Decoupled) ---
         # This runs *after* the generation block has finished and state is updated
         # Check if auto-open is enabled and a valid temporary viewer path exists
         if (
-            st.session_state.open_viewer and
-            st.session_state.viewer_path and
-            os.path.exists(st.session_state.viewer_path)
+            st.session_state.open_viewer
+            and st.session_state.viewer_path
+            and os.path.exists(st.session_state.viewer_path)
         ):
             viewer_path_to_open = st.session_state.viewer_path
             # Clear the temporary path immediately to prevent re-opening on rerun
@@ -786,8 +840,7 @@ if view_results_button:
                 st.warning(f"Could not automatically open viewer: {view_err}")
             # No need for viewer_auto_opened flag with this approach
         # --- End Automatic Viewer Opening ---
-        
-        
+
         # --- Add Footer or other elements if needed ---
 # st.sidebar.info("...")
 # --- Add Footer or other elements if needed ---
